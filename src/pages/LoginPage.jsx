@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, HardHat, UserCheck, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, UserCheck, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const { setRole } = useAuth();
@@ -47,10 +47,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md relative">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 border-2 border-white/20"
-            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-            <HardHat size={40} className="text-white" />
-          </div>
+          <img src="/ocp-logo.svg" alt="OCP" className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-xl" />
           <h1 className="text-white text-2xl font-extrabold">OCP Industriel</h1>
           <p className="text-green-200 text-sm mt-1">Suivi des Travaux Journaliers</p>
         </div>
@@ -104,7 +101,6 @@ export default function LoginPage() {
           <button onClick={() => handleLogin('agent')} disabled={loading}
             className="w-full flex items-center justify-center gap-2 text-white rounded-xl py-3 text-sm font-bold mb-3 transition-all disabled:opacity-50 shadow-md hover:shadow-lg hover:scale-[1.01]"
             style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
-            <HardHat size={18} />
             Se connecter en tant que Collaborateur OCP
           </button>
           <button onClick={() => handleLogin('responsable')} disabled={loading}

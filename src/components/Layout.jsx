@@ -8,6 +8,10 @@ import {
   LogOut, Menu, X, ClipboardList, Plus,
 } from 'lucide-react';
 
+const OcpLogo = ({ size = 36 }) => (
+  <img src="/ocp-logo.svg" alt="OCP" width={size} height={size} style={{ borderRadius: 8 }} />
+);
+
 const agentLinks = [
   { to: '/dashboard',      icon: LayoutDashboard, label: 'Tableau de bord' },
   { to: '/add-task',       icon: Plus,            label: 'Nouvelle tâche' },
@@ -58,9 +62,7 @@ export default function Layout() {
       {/* Logo */}
       <div className="px-4 py-5 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center border border-white/20">
-            <ClipboardList size={20} className="text-white" />
-          </div>
+          <OcpLogo size={40} />
           <div>
             <p className="text-white font-bold text-sm leading-none">OCP Industriel</p>
             <p className="text-green-200 text-xs mt-0.5">Suivi des Travaux</p>
@@ -126,6 +128,7 @@ export default function Layout() {
           <button onClick={() => setOpen(true)} className="text-white">
             <Menu size={22} />
           </button>
+          <OcpLogo size={28} />
           <span className="text-white font-bold text-sm">Suivi des Travaux Journaliers</span>
         </header>
 

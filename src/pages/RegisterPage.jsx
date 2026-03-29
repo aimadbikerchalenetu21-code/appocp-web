@@ -4,7 +4,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { registerAgent } from '../services/firestoreService';
-import { Eye, EyeOff, HardHat, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export default function RegisterPage() {
   const { setRole } = useAuth();
@@ -70,10 +70,7 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-md relative">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 border-2 border-white/20"
-            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-            <HardHat size={40} className="text-white" />
-          </div>
+          <img src="/ocp-logo.svg" alt="OCP" className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-xl" />
           <h1 className="text-white text-2xl font-extrabold">Inscription Collaborateur</h1>
           <p className="text-green-200 text-sm mt-1">Créer votre compte OCP</p>
         </div>
