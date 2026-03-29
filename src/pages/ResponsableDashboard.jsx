@@ -43,7 +43,7 @@ export default function ResponsableDashboard() {
         type: 'task-started', taskId: task.id, taskTitle: task.title,
         title: 'Tâche démarrée',
         message: `"${task.title}" a été démarrée par l'intervenant externe`,
-        icon: 'play-circle', iconColor: '#2563eb', iconBg: '#eff6ff',
+        icon: 'play-circle', iconColor: '#16a34a', iconBg: '#dcfce7',
       });
     }
   };
@@ -64,14 +64,18 @@ export default function ResponsableDashboard() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-800">Tableau de bord</h1>
-        <p className="text-gray-500 text-sm">Bonjour, Intervenant externe</p>
+      {/* Header banner */}
+      <div className="rounded-2xl p-5 mb-6 shadow-md"
+        style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
+        <h1 className="text-xl font-extrabold text-white">Tableau de bord</h1>
+        <p className="text-green-200 text-sm mt-0.5">Bonjour, Intervenant externe</p>
       </div>
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold text-gray-800">Tâches Prioritaires</h2>
-        <span className="text-xs bg-gray-100 text-gray-500 px-3 py-1 rounded-full font-semibold">{active} actives</span>
+        <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full font-semibold border border-green-100">
+          {active} actives
+        </span>
       </div>
 
       {tasks.length === 0 ? (
@@ -88,12 +92,12 @@ export default function ResponsableDashboard() {
             return (
               <div key={task.id}
                 className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 transition-all ${
-                  isInProgress ? 'border-blue-500' : isDone ? 'border-green-500 opacity-70' : 'border-gray-200'
+                  isInProgress ? 'border-green-500' : isDone ? 'border-green-400 opacity-75' : 'border-gray-200'
                 }`}>
                 <div className="flex items-start gap-3 mb-3 cursor-pointer"
                   onClick={() => navigate('/task/' + task.id, { state: { task } })}>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isInProgress ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                    <ClipboardList size={18} className={isInProgress ? 'text-blue-600' : 'text-gray-400'} />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isInProgress ? 'bg-green-50' : 'bg-gray-50'}`}>
+                    <ClipboardList size={18} className={isInProgress ? 'text-green-600' : 'text-gray-400'} />
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-800 leading-snug">{task.title}</p>
@@ -107,10 +111,11 @@ export default function ResponsableDashboard() {
                 </div>
 
                 {isInProgress && (
-                  <div className="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-2 mb-3">
-                    <Timer size={15} className="text-blue-600" />
-                    <span className="font-bold text-blue-700 tabular-nums">{fmt(timers[task.id])}</span>
-                    <span className="text-xs text-gray-400">en cours</span>
+                  <div className="flex items-center gap-2 rounded-xl px-3 py-2 mb-3"
+                    style={{ background: 'linear-gradient(90deg, #dcfce7, #bbf7d0)' }}>
+                    <Timer size={15} className="text-green-600" />
+                    <span className="font-bold text-green-700 tabular-nums">{fmt(timers[task.id])}</span>
+                    <span className="text-xs text-green-600">en cours</span>
                   </div>
                 )}
 
@@ -123,12 +128,13 @@ export default function ResponsableDashboard() {
                     <>
                       {!isInProgress && (
                         <button onClick={() => handleStart(task)}
-                          className="flex-1 flex items-center justify-center gap-2 bg-primary text-white rounded-xl py-2.5 text-sm font-bold hover:bg-blue-900 transition-colors">
+                          className="flex-1 flex items-center justify-center gap-2 text-white rounded-xl py-2.5 text-sm font-bold transition-all hover:shadow-md hover:scale-[1.01]"
+                          style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
                           <Play size={14} /> DÉMARRER
                         </button>
                       )}
                       <button onClick={() => handleEnd(task)}
-                        className={`flex-1 flex items-center justify-center gap-2 bg-red-500 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-red-600 transition-colors`}>
+                        className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-red-600 transition-colors">
                         <Square size={14} /> {isInProgress ? 'TERMINER' : 'FIN'}
                       </button>
                     </>

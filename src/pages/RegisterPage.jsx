@@ -45,10 +45,8 @@ export default function RegisterPage() {
       <div className="relative">
         <input
           type={show !== undefined ? (show ? 'text' : 'password') : type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors pr-12"
+          value={value} onChange={onChange} placeholder={placeholder}
+          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500 transition-colors pr-12"
         />
         {onToggle && (
           <button type="button" onClick={onToggle}
@@ -61,26 +59,33 @@ export default function RegisterPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-950 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 40%, #14532d 100%)' }}>
+
+      {/* Decorative blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20"
+          style={{ background: 'radial-gradient(circle, #4ade80, transparent)' }} />
+      </div>
+
+      <div className="w-full max-w-md relative">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl bg-white/15 flex items-center justify-center mx-auto mb-4 border-2 border-white/20">
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 border-2 border-white/20"
+            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
             <HardHat size={40} className="text-white" />
           </div>
           <h1 className="text-white text-2xl font-extrabold">Inscription Collaborateur</h1>
-          <p className="text-blue-200 text-sm mt-1">Créer votre compte OCP</p>
+          <p className="text-green-200 text-sm mt-1">Créer votre compte OCP</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-xl font-bold text-gray-800 mb-1">Nouveau compte</h2>
           <p className="text-gray-400 text-xs mb-6">Rôle : Collaborateur OCP</p>
 
-          <Field label="Nom complet" type="text" value={form.name} onChange={set('name')} placeholder="Votre nom et prénom" />
-          <Field label="Adresse Email" type="email" value={form.email} onChange={set('email')} placeholder="votre@email.com" />
-          <Field label="Mot de passe" type="password" value={form.password} onChange={set('password')}
-            placeholder="Min. 6 caractères" show={showPwd} onToggle={() => setShowPwd(!showPwd)} />
-          <Field label="Confirmer le mot de passe" type="password" value={form.confirm} onChange={set('confirm')}
-            placeholder="Répétez le mot de passe" show={showCnf} onToggle={() => setShowCnf(!showCnf)} />
+          <Field label="Nom complet"             type="text"     value={form.name}     onChange={set('name')}     placeholder="Votre nom et prénom" />
+          <Field label="Adresse Email"            type="email"    value={form.email}    onChange={set('email')}    placeholder="votre@email.com" />
+          <Field label="Mot de passe"             type="password" value={form.password} onChange={set('password')} placeholder="Min. 6 caractères"     show={showPwd} onToggle={() => setShowPwd(!showPwd)} />
+          <Field label="Confirmer le mot de passe" type="password" value={form.confirm}  onChange={set('confirm')}  placeholder="Répétez le mot de passe" show={showCnf} onToggle={() => setShowCnf(!showCnf)} />
 
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-sm text-red-600">
@@ -89,11 +94,12 @@ export default function RegisterPage() {
           )}
 
           <button onClick={handleRegister} disabled={loading}
-            className="w-full bg-primary text-white rounded-xl py-3 text-sm font-bold mb-3 hover:bg-blue-900 transition-colors disabled:opacity-50">
+            className="w-full text-white rounded-xl py-3 text-sm font-bold mb-3 transition-all disabled:opacity-50 shadow-md hover:shadow-lg hover:scale-[1.01]"
+            style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
             {loading ? 'Création...' : 'Créer mon compte'}
           </button>
 
-          <Link to="/login" className="flex items-center justify-center gap-1 text-sm text-blue-600 hover:underline">
+          <Link to="/login" className="flex items-center justify-center gap-1 text-sm text-green-600 hover:underline">
             <ArrowLeft size={14} /> Déjà un compte ? Se connecter
           </Link>
         </div>

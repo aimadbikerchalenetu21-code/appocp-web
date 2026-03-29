@@ -96,7 +96,8 @@ export default function AddTaskPage() {
           <p className="text-gray-500 text-sm mb-6">La tâche a été assignée à <span className="font-semibold">{lastEmail}</span>.</p>
           <div className="flex flex-col gap-3">
             <button onClick={handleAnother}
-              className="w-full bg-primary text-white rounded-xl py-3 text-sm font-bold hover:bg-blue-900 transition-colors">
+              className="w-full text-white rounded-xl py-3 text-sm font-bold transition-all shadow-md hover:shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
               Assigner une autre tâche au même intervenant
             </button>
             <button onClick={() => navigate('/dashboard')}
@@ -111,9 +112,10 @@ export default function AddTaskPage() {
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-800">Nouvelle tâche</h1>
-        <p className="text-gray-500 text-sm">Créer et assigner une tâche</p>
+      <div className="rounded-2xl p-5 mb-6 shadow-md"
+        style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
+        <h1 className="text-xl font-extrabold text-white">Nouvelle tâche</h1>
+        <p className="text-green-200 text-sm mt-0.5">Créer et assigner une tâche</p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
@@ -139,7 +141,7 @@ export default function AddTaskPage() {
             {PRIORITIES.map((p) => (
               <button key={p} onClick={() => setForm((f) => ({ ...f, priority: p }))}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${
-                  form.priority === p ? 'border-primary ' + PRIORITY_COLORS[p] : 'border-gray-100 bg-gray-50 text-gray-400'
+                  form.priority === p ? 'border-green-600 ' + PRIORITY_COLORS[p] : 'border-gray-100 bg-gray-50 text-gray-400'
                 }`}>
                 {p}
               </button>
@@ -201,7 +203,8 @@ export default function AddTaskPage() {
         )}
 
         <button onClick={handleSubmit} disabled={loading}
-          className="w-full bg-primary text-white rounded-xl py-3 text-sm font-bold hover:bg-blue-900 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+          className="w-full text-white rounded-xl py-3 text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:scale-[1.01]"
+          style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
           <ClipboardList size={16} />
           {loading ? 'Création...' : 'Créer la tâche'}
         </button>

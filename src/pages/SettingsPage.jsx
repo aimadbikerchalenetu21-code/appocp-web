@@ -27,9 +27,10 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-800">Paramètres</h1>
-        <p className="text-gray-500 text-sm">Informations du compte</p>
+      <div className="rounded-2xl p-5 mb-6 shadow-md"
+        style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
+        <h1 className="text-xl font-extrabold text-white">Paramètres</h1>
+        <p className="text-green-200 text-sm mt-0.5">Informations du compte</p>
       </div>
 
       <Section title="Profil">

@@ -41,15 +41,19 @@ export default function NotificationsPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="rounded-2xl p-5 mb-6 shadow-md flex items-center justify-between"
+        style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-800">Notifications</h1>
-          {unread > 0 && <p className="text-sm text-gray-500">{unread} non lue{unread > 1 ? 's' : ''}</p>}
+          <h1 className="text-xl font-extrabold text-white">Notifications</h1>
+          {unread > 0
+            ? <p className="text-green-200 text-sm mt-0.5">{unread} non lue{unread > 1 ? 's' : ''}</p>
+            : <p className="text-green-200 text-sm mt-0.5">Toutes lues</p>
+          }
         </div>
         {unread > 0 && (
           <button onClick={markAllRead}
-            className="text-xs font-semibold text-primary hover:underline">
-            Tout marquer comme lu
+            className="text-xs font-semibold bg-white/20 text-white px-3 py-1.5 rounded-lg hover:bg-white/30 transition-colors">
+            Tout lire
           </button>
         )}
       </div>
@@ -67,7 +71,7 @@ export default function NotificationsPage() {
               <div key={n.id}
                 onClick={() => handleRead(n)}
                 className={`bg-white rounded-xl p-4 shadow-sm border cursor-pointer transition-all ${
-                  n.read ? 'border-gray-100 opacity-70' : 'border-primary/20 shadow-md'
+                  n.read ? 'border-gray-100 opacity-70' : 'border-green-200 shadow-md'
                 }`}>
                 <div className="flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${ic.bg}`}>
@@ -80,7 +84,7 @@ export default function NotificationsPage() {
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
                   </div>
-                  {!n.read && <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />}
+                  {!n.read && <div className="w-2 h-2 rounded-full bg-green-600 flex-shrink-0 mt-1" />}
                 </div>
               </div>
             );

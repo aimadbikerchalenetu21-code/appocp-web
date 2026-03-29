@@ -79,13 +79,16 @@ export default function CalendarPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-800">Calendrier</h1>
-        <p className="text-gray-500 text-sm">Tâches par jour</p>
+      <div className="rounded-2xl p-5 mb-6 shadow-md"
+        style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
+        <h1 className="text-xl font-extrabold text-white">Calendrier</h1>
+        <p className="text-green-200 text-sm mt-0.5">Tâches par jour</p>
       </div>
 
       {/* Month nav */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 -translate-y-8 translate-x-8"
+          style={{ background: 'radial-gradient(circle, #16a34a, transparent)' }} />
         <div className="flex items-center justify-between mb-4">
           <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <ChevronLeft size={18} className="text-gray-600" />
@@ -114,14 +117,15 @@ export default function CalendarPage() {
             return (
               <button key={ymd} onClick={() => setSelectedDay(ymd)}
                 className={`relative flex flex-col items-center justify-center rounded-xl py-2 text-sm font-semibold transition-all ${
-                  isSelected ? 'bg-primary text-white' :
-                  isToday    ? 'border-2 border-primary text-primary' :
-                               'hover:bg-gray-50 text-gray-700'
-                }`}>
+                  isSelected ? 'text-white shadow-md' :
+                  isToday    ? 'border-2 border-green-600 text-green-700' :
+                               'hover:bg-green-50 text-gray-700'
+                }`}
+                style={isSelected ? { background: 'linear-gradient(135deg, #16a34a, #15803d)' } : {}}>
                 {day}
                 {count > 0 && (
                   <span className={`absolute top-0.5 right-0.5 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center ${
-                    isSelected ? 'bg-white text-primary' : 'bg-primary text-white'
+                    isSelected ? 'bg-white text-green-700' : 'bg-green-600 text-white'
                   }`}>{count}</span>
                 )}
               </button>

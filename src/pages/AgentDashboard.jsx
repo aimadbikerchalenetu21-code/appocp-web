@@ -29,25 +29,30 @@ export default function AgentDashboard() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      {/* Header banner */}
+      <div className="rounded-2xl p-5 mb-6 flex items-center justify-between shadow-md"
+        style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-800">Bonjour, Collaborateur OCP</h1>
-          <p className="text-gray-500 text-sm">Tableau de bord — Aujourd'hui</p>
+          <h1 className="text-xl font-extrabold text-white">Bonjour, Collaborateur OCP</h1>
+          <p className="text-green-200 text-sm mt-0.5">Tableau de bord — Aujourd'hui</p>
         </div>
         <button onClick={() => navigate('/add-task')}
-          className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-900 transition-colors shadow-md">
+          className="flex items-center gap-2 bg-white text-green-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-green-50 transition-colors shadow-md">
           <Plus size={18} /> Nouvelle tâche
         </button>
       </div>
 
       {/* Progress card */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-5">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-5 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 -translate-y-8 translate-x-8"
+          style={{ background: 'radial-gradient(circle, #16a34a, transparent)' }} />
         <div className="flex items-center justify-between mb-3">
           <span className="font-bold text-gray-700">Taux de réalisation</span>
-          <span className="text-2xl font-extrabold text-primary">{pct}%</span>
+          <span className="text-2xl font-extrabold text-green-600">{pct}%</span>
         </div>
         <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #16a34a, #4ade80)' }} />
         </div>
         <div className="flex gap-6 mt-4 text-center">
           {[['Total', total, 'text-gray-700'], ['Réalisées', completed, 'text-green-600'], ['Restantes', total - completed, 'text-amber-600']].map(([l, v, c]) => (
@@ -61,23 +66,29 @@ export default function AgentDashboard() {
 
       {/* KPI grid */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label: 'OK', count: completed, color: 'text-green-600', bg: 'bg-green-50', icon: CheckCircle },
-          { label: 'Bloqué', count: blocked, color: 'text-amber-600', bg: 'bg-amber-50', icon: AlertCircle },
-          { label: 'En attente', count: pending, color: 'text-gray-500', bg: 'bg-gray-50', icon: Clock },
-        ].map(({ label, count, color, bg, icon: Icon }) => (
-          <div key={label} className={`${bg} rounded-2xl p-4 border border-white shadow-sm`}>
-            <Icon size={22} className={`${color} mb-2`} />
-            <p className={`text-2xl font-extrabold ${color}`}>{String(count).padStart(2, '0')}</p>
-            <p className="text-xs text-gray-500 mt-1">{label}</p>
-          </div>
-        ))}
+        <div className="rounded-2xl p-4 shadow-sm text-white"
+          style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+          <CheckCircle size={22} className="mb-2 opacity-90" />
+          <p className="text-2xl font-extrabold">{String(completed).padStart(2, '0')}</p>
+          <p className="text-xs text-green-100 mt-1">OK</p>
+        </div>
+        <div className="rounded-2xl p-4 shadow-sm"
+          style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>
+          <AlertCircle size={22} className="mb-2 text-amber-600" />
+          <p className="text-2xl font-extrabold text-amber-700">{String(blocked).padStart(2, '0')}</p>
+          <p className="text-xs text-amber-600 mt-1">Bloqué</p>
+        </div>
+        <div className="rounded-2xl p-4 shadow-sm bg-gray-50 border border-gray-200">
+          <Clock size={22} className="mb-2 text-gray-400" />
+          <p className="text-2xl font-extrabold text-gray-600">{String(pending).padStart(2, '0')}</p>
+          <p className="text-xs text-gray-400 mt-1">En attente</p>
+        </div>
       </div>
 
       {/* Tasks list */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold text-gray-800">Mes tâches</h2>
-        <span className="text-xs bg-gray-100 text-gray-500 px-3 py-1 rounded-full font-semibold">
+        <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full font-semibold border border-green-100">
           {total} tâche{total !== 1 ? 's' : ''}
         </span>
       </div>
@@ -93,7 +104,7 @@ export default function AgentDashboard() {
             const sc = STATUS[task.status] || STATUS.pending;
             return (
               <div key={task.id} onClick={() => navigate('/task/' + task.id, { state: { task } })}
-                className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${sc.border} cursor-pointer hover:shadow-md transition-shadow flex items-center gap-4`}>
+                className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${sc.border} cursor-pointer hover:shadow-md transition-all flex items-center gap-4`}>
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${sc.bg}`}>
                   <ClipboardList size={18} className={sc.color} />
                 </div>

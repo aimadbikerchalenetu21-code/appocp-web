@@ -43,8 +43,8 @@ export default function Layout() {
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
           isActive
-            ? 'bg-white text-primary shadow-sm'
-            : 'text-blue-100 hover:bg-white/10'
+            ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/10'
+            : 'text-green-100 hover:bg-white/10 hover:text-white'
         }`
       }
     >
@@ -58,19 +58,19 @@ export default function Layout() {
       {/* Logo */}
       <div className="px-4 py-5 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center border border-white/20">
             <ClipboardList size={20} className="text-white" />
           </div>
           <div>
             <p className="text-white font-bold text-sm leading-none">OCP Industriel</p>
-            <p className="text-blue-200 text-xs mt-0.5">Suivi des Travaux</p>
+            <p className="text-green-200 text-xs mt-0.5">Suivi des Travaux</p>
           </div>
         </div>
       </div>
 
       {/* Role badge */}
       <div className="px-4 py-3">
-        <span className="text-xs bg-white/15 text-blue-100 px-3 py-1 rounded-full font-medium">
+        <span className="text-xs bg-white/15 text-green-100 px-3 py-1.5 rounded-full font-medium border border-white/10">
           {role === 'responsable' ? 'Intervenant externe' : 'Collaborateur OCP'}
         </span>
       </div>
@@ -82,7 +82,12 @@ export default function Layout() {
 
       {/* User + logout */}
       <div className="px-4 py-4 border-t border-white/10">
-        <p className="text-blue-200 text-xs truncate mb-3">{user?.email}</p>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs text-white font-bold">
+            {user?.email?.[0]?.toUpperCase()}
+          </div>
+          <p className="text-green-200 text-xs truncate">{user?.email}</p>
+        </div>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-red-300 hover:text-red-200 transition-colors"
@@ -96,15 +101,17 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-primary flex-shrink-0">
+      {/* Desktop sidebar — green gradient */}
+      <aside className="hidden md:flex flex-col w-60 flex-shrink-0"
+        style={{ background: 'linear-gradient(180deg, #166534 0%, #14532d 60%, #052e16 100%)' }}>
         <Sidebar />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {open && (
         <div className="fixed inset-0 z-50 flex md:hidden">
-          <div className="w-60 bg-primary flex flex-col">
+          <div className="w-60 flex flex-col"
+            style={{ background: 'linear-gradient(180deg, #166534 0%, #14532d 60%, #052e16 100%)' }}>
             <Sidebar />
           </div>
           <div className="flex-1 bg-black/40" onClick={() => setOpen(false)} />
@@ -114,7 +121,8 @@ export default function Layout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile top bar */}
-        <header className="md:hidden bg-primary px-4 py-3 flex items-center gap-3">
+        <header className="md:hidden px-4 py-3 flex items-center gap-3"
+          style={{ background: 'linear-gradient(90deg, #166534, #15803d)' }}>
           <button onClick={() => setOpen(true)} className="text-white">
             <Menu size={22} />
           </button>
@@ -122,7 +130,7 @@ export default function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-gray-50">
           <Outlet />
         </main>
       </div>
