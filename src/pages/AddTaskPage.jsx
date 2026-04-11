@@ -149,7 +149,6 @@ export default function AddTaskPage() {
 
   const [tasks, setTasks]               = useState([makeTask()]);
   const [currentInput, setCurrentInput] = useState('');
-  const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
   const [responsableEmail, setResponsableEmail]     = useState('');
   const [responsablePassword, setResponsablePassword] = useState('');
   const [loading, setLoading]           = useState(false);
@@ -159,7 +158,6 @@ export default function AddTaskPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const inputRef  = useRef(null);
-  const dateStrip = buildDateStrip();
   const todayYMD  = toYMD(new Date());
 
   useEffect(() => { getAllAgentNames().then(setAgents).catch(() => {}); }, []);
@@ -242,7 +240,7 @@ export default function AddTaskPage() {
               priority:  task.priority,
               zone:      task.zone.trim(),
               assetTags: task.assetTags.trim(),
-              dueDate:   task.date || selectedDate,
+              dueDate:   task.date || todayYMD,
               assignedTo: { email: responsableEmail.trim().toLowerCase(), uid: responsableUid || '' },
             },
             { uid: user.uid, email: user.email }
@@ -286,7 +284,6 @@ export default function AddTaskPage() {
     setCredentials(null);
     setTasks([makeTask()]);
     setCurrentInput('');
-    setSelectedDate(todayYMD);
     setResponsableEmail(keepEmail);
     setResponsablePassword('');
   };
@@ -390,31 +387,6 @@ export default function AddTaskPage() {
               onKeyDown={handleInputKeyDown}
               placeholder="Ajouter une tâche... (Entrée pour confirmer)"
               className="flex-1 text-sm text-gray-600 outline-none bg-transparent placeholder-gray-300" />
-          </div>
-        </div>
-
-        {/* ── Date strip ────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">📅 Date planifiée *</label>
-          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            {dateStrip.map((d) => {
-              const ymd   = toYMD(d);
-              const isSel = ymd === selectedDate;
-              const isToday = ymd === todayYMD;
-              return (
-                <button key={ymd} onClick={() => setSelectedDate(ymd)}
-                  className={`flex-shrink-0 flex flex-col items-center w-14 py-2.5 rounded-xl border-2 transition-all ${
-                    isSel ? 'text-white border-transparent shadow-md' :
-                    isToday ? 'border-green-500 text-green-700' :
-                    'border-gray-100 text-gray-600 hover:border-green-300 hover:bg-green-50'
-                  }`}
-                  style={isSel ? { background: 'linear-gradient(135deg, #166534, #16a34a)' } : {}}>
-                  <span className="text-xs font-medium opacity-80">{DAYS_FR[d.getDay()]}</span>
-                  <span className="text-lg font-extrabold leading-tight">{d.getDate()}</span>
-                  <span className="text-xs font-medium opacity-70">{MONTHS_FR[d.getMonth()]}</span>
-                </button>
-              );
-            })}
           </div>
         </div>
 
