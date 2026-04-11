@@ -6,6 +6,7 @@ import {
   User, AlertCircle, CheckCircle, Tag, MapPin, FileText,
   Send, Plus, X, ChevronDown, ChevronUp, Flag,
 } from 'lucide-react';
+import ExcelTaskImporter from '../components/ExcelTaskImporter';
 
 const PRIORITIES = ['Faible', 'Moyen', 'Élevé', 'Critique'];
 const PRIORITY_STYLES = {
@@ -249,6 +250,18 @@ export default function AddTaskPage() {
     } finally { setLoading(false); }
   };
 
+  /* ── Excel import handler ─────────────────────────────────────────── */
+  const handleTasksExtracted = (importedTitles) => {
+    setTasks((prev) => {
+      const existingTitles = new Set(prev.map((t) => t.title.trim().toLowerCase()));
+      const newTasks = importedTitles
+        .filter((title) => !existingTitles.has(title.trim().toLowerCase()))
+        .map((title) => ({ ...makeTask(), title, expanded: false }));
+      // collapse existing tasks and append new ones
+      return [...prev.map((t) => ({ ...t, expanded: false })), ...newTasks];
+    });
+  };
+
   const resetForm = (keepEmail = '') => {
     setCredentials(null);
     setTasks([makeTask()]);
@@ -324,6 +337,9 @@ export default function AddTaskPage() {
       </div>
 
       <div className="space-y-4">
+
+        {/* ── Excel import ──────────────────────────────────────────── */}
+        <ExcelTaskImporter onTasksExtracted={handleTasksExtracted} />
 
         {/* ── Task list ─────────────────────────────────────────────── */}
         <div>
