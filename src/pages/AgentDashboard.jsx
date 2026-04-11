@@ -405,12 +405,16 @@ export default function AgentDashboard() {
                               </span>
                             )}
                           </div>
-                          {(task.startedAt || task.completedAt) && (
+                          {(task.startedAt || task.completedAt || task.blockedAt) && (
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
                               {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
+                              {fmtHour(task.blockedAt) && <span className="text-xs text-amber-600 font-semibold">⚠ {fmtHour(task.blockedAt)}</span>}
                               {fmtDuration(task.startedAt, task.completedAt) && (
                                 <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
+                              )}
+                              {!fmtHour(task.completedAt) && fmtDuration(task.startedAt, task.blockedAt) && (
+                                <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.blockedAt)}</span>
                               )}
                             </div>
                           )}
@@ -545,12 +549,16 @@ export default function AgentDashboard() {
                             )}
                             {task.dueDate && <span className="text-xs text-gray-300">{task.dueDate}</span>}
                           </div>
-                          {(task.startedAt || task.completedAt) && (
+                          {(task.startedAt || task.completedAt || task.blockedAt) && (
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
                               {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
+                              {fmtHour(task.blockedAt) && <span className="text-xs text-amber-600 font-semibold">⚠ {fmtHour(task.blockedAt)}</span>}
                               {fmtDuration(task.startedAt, task.completedAt) && (
                                 <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
+                              )}
+                              {!fmtHour(task.completedAt) && fmtDuration(task.startedAt, task.blockedAt) && (
+                                <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.blockedAt)}</span>
                               )}
                             </div>
                           )}

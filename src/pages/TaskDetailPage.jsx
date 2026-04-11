@@ -235,11 +235,25 @@ export default function TaskDetailPage() {
                 <span className="text-sm font-bold text-green-600">{fmtHour(task.completedAt)}</span>
               </div>
             )}
+            {fmtHour(task.blockedAt) && (
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-xs text-gray-400">⚠ Heure de blocage</span>
+                <span className="text-sm font-bold text-amber-600">{fmtHour(task.blockedAt)}</span>
+              </div>
+            )}
             {fmtDuration(task.startedAt, task.completedAt) && (
               <div className="flex items-center justify-between py-2.5">
                 <span className="text-xs text-gray-400">⏱ Durée</span>
                 <span className="text-sm font-bold text-gray-700 bg-gray-100 px-2.5 py-0.5 rounded-full">
                   {fmtDuration(task.startedAt, task.completedAt)}
+                </span>
+              </div>
+            )}
+            {!fmtHour(task.completedAt) && fmtDuration(task.startedAt, task.blockedAt) && (
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-xs text-gray-400">⏱ Durée avant blocage</span>
+                <span className="text-sm font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full">
+                  {fmtDuration(task.startedAt, task.blockedAt)}
                 </span>
               </div>
             )}
@@ -316,7 +330,14 @@ export default function TaskDetailPage() {
         {/* Blocked reason */}
         {status === 'blocked' && task.blockedReason && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-            <p className="text-xs font-bold text-amber-700 mb-1">Point bloquant signalé</p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-bold text-amber-700">⚠ Point bloquant signalé</p>
+              {fmtHour(task.blockedAt) && (
+                <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                  {fmtHour(task.blockedAt)}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-amber-800">{task.blockedReason}</p>
           </div>
         )}
