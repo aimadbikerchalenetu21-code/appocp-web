@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { updateTaskStatus, createNotification } from '../services/firestoreService';
 import {
-  ClipboardList, MapPin, Flag, User, CheckCircle, AlertTriangle, ArrowLeft,
+  ClipboardList, Flag, User, CheckCircle, AlertTriangle, ArrowLeft,
   Cog, CheckSquare, Square, Camera, X,
 } from 'lucide-react';
 
@@ -105,98 +105,111 @@ export default function TaskDetailPage() {
   const isFinal = status === 'completed' || status === 'blocked';
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      {/* Back */}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-5">
-        <ArrowLeft size={15} /> Retour
-      </button>
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Header */}
+      <div className="px-5 py-4 flex items-center gap-3 flex-shrink-0"
+        style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
+        <button onClick={() => navigate(-1)}
+          className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors flex-shrink-0">
+          <ArrowLeft size={16} />
+        </button>
+        <h1 className="text-base font-extrabold text-white">Détails de la tâche</h1>
+      </div>
 
-      {/* Header card */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto pb-6 px-4 pt-4 space-y-3">
+
+        {/* Task ID + title */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           {taskShortId && (
-            <span className="text-xs font-semibold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-lg">
+            <span className="text-xs font-semibold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-lg mb-2 inline-block">
               Tâche #{taskShortId}
             </span>
           )}
-          {task.priority && (
-            <span className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg ${pc.bg} ${pc.text}`}>
-              <Flag size={11} /> {task.priority}
-            </span>
-          )}
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${sc.bg} ${sc.color}`}>
-            {sc.label}
-          </span>
+          <h1 className="text-lg font-extrabold text-gray-800 mt-1">{task.title}</h1>
         </div>
-        <h1 className="text-xl font-extrabold text-gray-800 leading-snug mb-2">{task.title}</h1>
-        {task.procedure && (
-          <p className="text-sm text-gray-500 leading-relaxed">{task.procedure}</p>
-        )}
-      </div>
 
-      {/* Progress / Checklist */}
-      {checklist.length > 0 && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-gray-700 text-sm">Progression</h2>
-            <span className="text-lg font-extrabold text-green-600">{completionPct}%</span>
+        {/* Progression */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-bold text-gray-700">Progression</span>
+            <span className="text-sm font-extrabold text-blue-600">{completionPct}%</span>
           </div>
-          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500"
               style={{ width: `${completionPct}%`, background: 'linear-gradient(90deg, #16a34a, #4ade80)' }} />
           </div>
-          <div className="space-y-2">
-            {checklist.map((item) => (
-              <button key={item.id} onClick={() => toggleCheck(item.id)}
-                className="w-full flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors text-left">
-                {item.done
-                  ? <CheckSquare size={18} className="text-green-600 flex-shrink-0" />
-                  : <Square size={18} className="text-gray-300 flex-shrink-0" />
-                }
-                <span className={`text-sm ${item.done ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                  {item.label}
-                </span>
-              </button>
+          {checklist.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              {checklist.map((item) => (
+                <button key={item.id} onClick={() => toggleCheck(item.id)}
+                  className="w-full flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-gray-50 transition-colors text-left">
+                  {item.done
+                    ? <CheckSquare size={16} className="text-green-600 flex-shrink-0" />
+                    : <Square size={16} className="text-gray-300 flex-shrink-0" />}
+                  <span className={`text-sm ${item.done ? 'line-through text-gray-400' : 'text-gray-700'}`}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Détails de l'équipement */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Cog size={15} className="text-green-600" />
+            <h2 className="font-bold text-gray-700 text-sm">Détails de l'équipement</h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {[
+              ['Equipement',        task.assetTags || task.ordre || '—'],
+              ['Localisation',      task.objTechnique || task.zone || '—'],
+              ['Date planifiée',    task.dueDate    || '—'],
+              ['Intervenant assigné', task.assignedTo?.email || '—'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between py-2.5">
+                <span className="text-xs text-gray-400">{label}</span>
+                <span className="text-sm font-semibold text-gray-700 text-right max-w-[60%] truncate">{value}</span>
+              </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Asset details */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Cog size={16} className="text-green-600" />
-          <h2 className="font-bold text-gray-700 text-sm">Détails de l'équipement</h2>
-        </div>
-        <div className="space-y-3">
-          {[
-            ['Équipement',         task.assetTags  || '—'],
-            ['Localisation',       task.zone       || '—'],
-            ['Date limite',        task.dueDate    || '—'],
-            ['Intervenant assigné', task.assignedTo?.email || '—'],
-            ['Créé par',           task.createdBy?.email  || '—'],
-          ].map(([label, value]) => (
-            <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-              <span className="text-xs text-gray-400">{label}</span>
-              <span className="text-sm font-semibold text-gray-700 text-right max-w-[60%] truncate">{value}</span>
+        {/* Intervenants externes ayant opéré */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-3">
+            <User size={15} className="text-green-600" />
+            <h2 className="font-bold text-gray-700 text-sm">Intervenants externes ayant opéré</h2>
+          </div>
+          {task.assignedTo?.email ? (
+            <div className="flex items-center gap-2 py-2">
+              <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-700">
+                {task.assignedTo.email[0].toUpperCase()}
+              </div>
+              <span className="text-sm text-gray-700">{task.assignedTo.email}</span>
             </div>
-          ))}
+          ) : (
+            <p className="text-xs text-gray-400 text-center py-2">Aucun intervenant enregistré.</p>
+          )}
+          <button className="w-full mt-2 border border-dashed border-blue-200 rounded-xl py-2.5 text-sm text-blue-500 font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1">
+            <span className="text-base leading-none">⊕</span> Ajouter un intervenant
+          </button>
         </div>
+
+        {/* Blocked reason */}
+        {status === 'blocked' && task.blockedReason && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <p className="text-xs font-bold text-amber-700 mb-1">Point bloquant signalé</p>
+            <p className="text-sm text-amber-800">{task.blockedReason}</p>
+          </div>
+        )}
       </div>
 
-      {/* Blocked reason (if blocked) */}
-      {status === 'blocked' && task.blockedReason && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-bold text-amber-700 mb-1">Point bloquant</p>
-          <p className="text-sm text-amber-800">{task.blockedReason}</p>
-        </div>
-      )}
-
-      {/* Actions (only for responsable role) */}
+      {/* ── Bottom action area (responsable only) ─────────────────────── */}
       {role === 'responsable' && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <div className="flex-shrink-0 bg-white border-t border-gray-100">
           {isFinal ? (
-            <div className={`flex items-center justify-center gap-3 rounded-xl py-4 ${status === 'completed' ? 'bg-green-50' : 'bg-amber-50'}`}>
+            <div className={`flex items-center justify-center gap-3 py-5 ${status === 'completed' ? 'bg-green-50' : 'bg-amber-50'}`}>
               {status === 'completed'
                 ? <><CheckCircle size={20} className="text-green-600" /><span className="font-bold text-green-700">Tâche terminée avec succès</span></>
                 : <><AlertTriangle size={20} className="text-amber-600" /><span className="font-bold text-amber-700">Point bloquant signalé</span></>
@@ -204,32 +217,28 @@ export default function TaskDetailPage() {
             </div>
           ) : (
             <>
-              <p className="text-xs font-semibold text-gray-500 mb-3">Mettre à jour le statut</p>
-              <div className="flex gap-3 mb-4">
-                {/* OK button */}
+              {/* OK + Point Bloquant buttons */}
+              <div className="flex">
                 <button onClick={handleOK} disabled={loading}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl py-4 text-sm font-extrabold text-white transition-all hover:shadow-lg hover:scale-[1.01] disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 4px 12px rgba(22,163,74,0.35)' }}>
+                  className="flex-1 flex items-center justify-center gap-2 py-5 text-sm font-extrabold text-white transition-all hover:brightness-110 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
                   <CheckCircle size={18} /> OK
                 </button>
-                {/* Point Bloquant button */}
                 <button
                   onClick={() => { setSelectedAction(selectedAction === 'blocked' ? null : 'blocked'); setDescError(''); }}
-                  className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-4 text-sm font-extrabold text-white transition-all hover:shadow-lg ${
-                    selectedAction === 'blocked' ? 'scale-[0.98]' : 'hover:scale-[1.01]'
-                  }`}
+                  className="flex-1 flex items-center justify-center gap-2 py-5 text-sm font-extrabold text-white transition-all hover:brightness-110"
                   style={{
                     background: selectedAction === 'blocked'
                       ? 'linear-gradient(135deg, #d97706, #b45309)'
                       : 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    boxShadow: '0 4px 12px rgba(245,158,11,0.35)',
                   }}>
                   <AlertTriangle size={18} /> Point Bloquant
                 </button>
               </div>
 
+              {/* Blocking point form */}
               {selectedAction === 'blocked' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="bg-amber-50 border-t border-amber-200 px-4 pt-4 pb-6">
                   <label className="block text-sm font-bold text-amber-800 mb-2">
                     Description du point bloquant *
                   </label>
@@ -238,13 +247,12 @@ export default function TaskDetailPage() {
                     onChange={(e) => { setBlockedDesc(e.target.value); setDescError(''); }}
                     rows={4}
                     placeholder="Décrivez le problème rencontré..."
-                    className={`w-full border-2 rounded-xl px-4 py-3 text-sm focus:outline-none resize-none transition-colors bg-white mb-3 ${
+                    className={`w-full border-2 rounded-xl px-4 py-3 text-sm focus:outline-none resize-none bg-white mb-2 ${
                       descError ? 'border-red-400' : 'border-amber-200 focus:border-amber-400'
                     }`}
                   />
-                  {descError && <p className="text-red-500 text-xs mb-3">{descError}</p>}
+                  {descError && <p className="text-red-500 text-xs mb-2">{descError}</p>}
 
-                  {/* Photo upload */}
                   <label className="block text-sm font-bold text-amber-800 mb-2">Photos (optionnel)</label>
                   {images.length > 0 && (
                     <div className="flex gap-2 mb-3 flex-wrap">
@@ -262,15 +270,16 @@ export default function TaskDetailPage() {
                   <input type="file" ref={fileInputRef} onChange={handleFileChange}
                     accept="image/*" multiple className="hidden" />
                   <button onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-amber-300 bg-amber-50 rounded-xl py-4 flex flex-col items-center gap-1 text-amber-600 hover:bg-amber-100 transition-colors mb-3">
+                    className="w-full border-2 border-dashed border-amber-300 bg-white rounded-xl py-4 flex flex-col items-center gap-1 text-amber-500 hover:bg-amber-50 transition-colors mb-3">
                     <Camera size={22} />
                     <span className="text-xs font-bold">Ajouter une photo</span>
-                    <span className="text-xs text-gray-400">Depuis votre appareil</span>
+                    <span className="text-xs text-gray-400">Caméra ou galerie</span>
                   </button>
 
                   <button onClick={handleSubmitBlocked} disabled={loading}
-                    className="w-full bg-amber-500 text-white rounded-xl py-3 text-sm font-bold hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                    {loading ? 'En cours...' : 'Signaler le point bloquant'}
+                    className="w-full text-white rounded-xl py-4 text-sm font-extrabold disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+                    {loading ? 'En cours...' : '▶ Signaler et terminer'}
                   </button>
                 </div>
               )}
