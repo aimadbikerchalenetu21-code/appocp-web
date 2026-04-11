@@ -138,11 +138,6 @@ function TaskCard({ task, onUpdate, onRemove }) {
               placeholder="Ex: SF01-PE-COMM-1" className={inputCls} />
           </Field>
 
-          {/* Priority */}
-          <Field icon={Flag} label="Désign.priorité">
-            <PriorityPicker value={task.priority} onChange={(v) => onUpdate({ priority: v })} />
-          </Field>
-
           {/* Dates */}
           <div className="grid grid-cols-2 gap-2">
             <Field icon={Calendar} label="Date début">
