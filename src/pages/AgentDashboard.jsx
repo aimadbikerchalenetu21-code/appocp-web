@@ -15,6 +15,26 @@ function todayYMD() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+function tsToDate(ts) {
+  if (!ts) return null;
+  if (ts?.toDate) return ts.toDate();
+  if (ts?.seconds) return new Date(ts.seconds * 1000);
+  return null;
+}
+function fmtHour(ts) {
+  const d = tsToDate(ts);
+  if (!d) return null;
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function fmtDuration(startTs, endTs) {
+  const s = tsToDate(startTs), e = tsToDate(endTs);
+  if (!s || !e) return null;
+  const mins = Math.round((e - s) / 60000);
+  if (mins < 0) return null;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? `${h}h ${m}min` : `${m}min`;
+}
 function toYMD(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
@@ -374,7 +394,7 @@ export default function AgentDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-800 text-sm truncate">{task.title}</p>
-                          <div className="flex items-center gap-3 mt-0.5">
+                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                             <span className="flex items-center gap-1 text-xs text-gray-400">
                               <Flag size={10} /> {task.priority || 'Moyen'}
                             </span>
@@ -384,6 +404,15 @@ export default function AgentDashboard() {
                               </span>
                             )}
                           </div>
+                          {(task.startedAt || task.completedAt) && (
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
+                              {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
+                              {fmtDuration(task.startedAt, task.completedAt) && (
+                                <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
                           {sc.label}
@@ -501,13 +530,22 @@ export default function AgentDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-800 text-sm truncate">{task.title}</p>
-                          <div className="flex items-center gap-3 mt-0.5">
+                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                             <span className="flex items-center gap-1 text-xs text-gray-400"><Flag size={10} /> {task.priority || 'Moyen'}</span>
                             {task.assignedTo?.email && (
                               <span className="flex items-center gap-1 text-xs text-gray-400 truncate"><User size={10} /> {task.assignedTo.email}</span>
                             )}
                             {task.dueDate && <span className="text-xs text-gray-300">{task.dueDate}</span>}
                           </div>
+                          {(task.startedAt || task.completedAt) && (
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
+                              {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
+                              {fmtDuration(task.startedAt, task.completedAt) && (
+                                <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
                           {sc.label}

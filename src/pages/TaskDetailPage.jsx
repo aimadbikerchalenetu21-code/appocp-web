@@ -2,6 +2,26 @@ import { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { updateTaskStatus, createNotification } from '../services/firestoreService';
+
+function tsToDate(ts) {
+  if (!ts) return null;
+  if (ts?.toDate) return ts.toDate();
+  if (ts?.seconds) return new Date(ts.seconds * 1000);
+  return null;
+}
+function fmtHour(ts) {
+  const d = tsToDate(ts);
+  if (!d) return null;
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function fmtDuration(startTs, endTs) {
+  const s = tsToDate(startTs), e = tsToDate(endTs);
+  if (!s || !e) return null;
+  const mins = Math.round((e - s) / 60000);
+  if (mins < 0) return null;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? `${h}h ${m}min` : `${m}min`;
+}
 import {
   ClipboardList, Flag, User, CheckCircle, AlertTriangle, ArrowLeft,
   Cog, CheckSquare, Square, Camera, X,
@@ -162,9 +182,9 @@ export default function TaskDetailPage() {
           </div>
           <div className="divide-y divide-gray-50">
             {[
-              ['Equipement',        task.assetTags || task.ordre || '—'],
-              ['Localisation',      task.objTechnique || task.zone || '—'],
-              ['Date planifiée',    task.dueDate    || '—'],
+              ['Equipement',         task.assetTags || task.ordre || '—'],
+              ['Localisation',       task.objTechnique || task.zone || '—'],
+              ['Date planifiée',     task.dueDate    || '—'],
               ['Intervenant assigné', task.assignedTo?.email || '—'],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between py-2.5">
@@ -172,6 +192,28 @@ export default function TaskDetailPage() {
                 <span className="text-sm font-semibold text-gray-700 text-right max-w-[60%] truncate">{value}</span>
               </div>
             ))}
+
+            {/* Timing rows */}
+            {fmtHour(task.startedAt) && (
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-xs text-gray-400">▶ Heure de départ</span>
+                <span className="text-sm font-bold text-blue-600">{fmtHour(task.startedAt)}</span>
+              </div>
+            )}
+            {fmtHour(task.completedAt) && (
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-xs text-gray-400">⏹ Heure de fin</span>
+                <span className="text-sm font-bold text-green-600">{fmtHour(task.completedAt)}</span>
+              </div>
+            )}
+            {fmtDuration(task.startedAt, task.completedAt) && (
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-xs text-gray-400">⏱ Durée</span>
+                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                  {fmtDuration(task.startedAt, task.completedAt)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
