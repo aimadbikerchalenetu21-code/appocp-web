@@ -19,16 +19,18 @@ const KNOWN_COLS = {
   libelle:         'title',
   intitule:        'title',
   tache:           'title',
-  description:     'procedure',
-  descpostrav:     'procedure',
-  descriptionpost: 'procedure',
-  objtechnique:    'zone',
-  objetechnique:   'zone',
-  objectiftechni:  'zone',
-  objtechn:        'zone',
+  descpostrav:     'descPosTrav',
+  descriptionpost: 'descPosTrav',
+  description:     'descPosTrav',
+  objtechnique:    'objTechnique',
+  objetechnique:   'objTechnique',
+  objectiftechni:  'objTechnique',
+  objtechn:        'objTechnique',
   datedebut:       'dateDebut',
   datededebut:     'dateDebut',
   datedebuts:      'dateDebut',
+  datefin:         'dateFin',
+  datedefin:       'dateFin',
   designpriorite:  'priorityRaw',
   priorite:        'priorityRaw',
   priorites:       'priorityRaw',
@@ -39,6 +41,9 @@ const KNOWN_COLS = {
   planentretien:   'planEntretien',
   statutsysteme:   'statutSys',
   statutsys:       'statutSys',
+  statutsysteme2:  'statutSys',
+  statututilis:    'statutUtilis',
+  statututil:      'statutUtilis',
 };
 
 /* ── Priority mapping (SAP values → app values) ─────────────────────────── */
@@ -193,21 +198,22 @@ export default function ExcelTaskImporter({ onTasksExtracted }) {
             const title = get('title');
             if (!title) return null;
 
-            const ordre = get('ordre');
-            const avis  = get('avis');
-            const assetParts = [ordre && `Ordre: ${ordre}`, avis && `Avis: ${avis}`].filter(Boolean);
-
-            // Use raw value for date parsing (could be number or string)
-            const rawDateVal = fieldMap['dateDebut'] ? rawRow[fieldMap['dateDebut']] : null;
-            const date = parseDate(rawDateVal);
+            const rawDateVal    = fieldMap['dateDebut'] ? rawRow[fieldMap['dateDebut']] : null;
+            const rawDateFinVal = fieldMap['dateFin']   ? rawRow[fieldMap['dateFin']]   : null;
 
             return {
               title,
-              date,
-              zone:      get('zone'),
-              assetTags: assetParts.join(' | '),
-              procedure: get('procedure'),
-              priority:  mapPriority(get('priorityRaw')),
+              ordre:         get('ordre'),
+              avis:          get('avis'),
+              type:          get('type'),
+              objTechnique:  get('objTechnique'),
+              priority:      mapPriority(get('priorityRaw')),
+              date:          parseDate(rawDateVal),
+              dateFin:       parseDate(rawDateFinVal),
+              statutSys:     get('statutSys'),
+              descPosTrav:   get('descPosTrav'),
+              planEntretien: get('planEntretien'),
+              statutUtilis:  get('statutUtilis'),
             };
           }).filter(Boolean);
 

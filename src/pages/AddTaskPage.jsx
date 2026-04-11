@@ -3,59 +3,61 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createTask, createResponsableAccount, getAllAgentNames } from '../services/firestoreService';
 import {
-  User, AlertCircle, CheckCircle, Tag, MapPin, FileText,
+  User, AlertCircle, CheckCircle,
   Send, Plus, X, ChevronDown, ChevronUp, Flag,
+  Hash, FileText, Settings, MapPin, Calendar,
 } from 'lucide-react';
 import ExcelTaskImporter from '../components/ExcelTaskImporter';
 
 const PRIORITIES = ['Faible', 'Moyen', 'Élevé', 'Critique'];
 const PRIORITY_STYLES = {
-  Faible:   { chip: 'bg-green-50 text-green-700 border-green-400',  dot: 'bg-green-500' },
-  Moyen:    { chip: 'bg-blue-50 text-blue-700 border-blue-400',     dot: 'bg-blue-500' },
+  Faible:   { chip: 'bg-green-50 text-green-700 border-green-400',   dot: 'bg-green-500' },
+  Moyen:    { chip: 'bg-blue-50 text-blue-700 border-blue-400',      dot: 'bg-blue-500' },
   Élevé:   { chip: 'bg-orange-50 text-orange-700 border-orange-400', dot: 'bg-orange-500' },
-  Critique: { chip: 'bg-red-50 text-red-700 border-red-400',        dot: 'bg-red-500' },
+  Critique: { chip: 'bg-red-50 text-red-700 border-red-400',         dot: 'bg-red-500' },
 };
-
-const DAYS_FR   = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
 function toYMD(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function buildDateStrip() {
-  const days = [];
-  const today = new Date();
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    days.push(d);
-  }
-  return days;
-}
-
-let _id = 0;
-const uid = () => ++_id;
-
-function makeTask() {
-  return { id: uid(), title: '', priority: 'Moyen', zone: '', assetTags: '', procedure: '', date: null, expanded: true };
-}
-
-/* ── Format YMD → "DD/MM" for display ─────────────────────────────────── */
 function fmtShort(ymd) {
   if (!ymd) return '';
   const [, m, d] = ymd.split('-');
   return `${d}/${m}`;
 }
 
-/* ── Small priority picker ─────────────────────────────────────────── */
+let _id = 0;
+const uid = () => ++_id;
+
+function makeTask() {
+  return {
+    id:            uid(),
+    title:         '',       // Désignation
+    ordre:         '',       // Ordre (N° OT SAP)
+    avis:          '',       // Avis (N° notification)
+    type:          '',       // Type d'ordre
+    objTechnique:  '',       // Obj. technique
+    priority:      'Moyen', // Désign.priorité
+    date:          null,     // Date début (YYYY-MM-DD)
+    dateFin:       null,     // Date fin   (YYYY-MM-DD)
+    statutSys:     '',       // Statut système
+    descPosTrav:   '',       // Desc. pos.trav.
+    planEntretien: '',       // Plan entretien
+    expanded:      true,
+  };
+}
+
+/* ── Priority picker ────────────────────────────────────────────────── */
 function PriorityPicker({ value, onChange }) {
   return (
     <div className="flex gap-1.5 flex-wrap">
       {PRIORITIES.map((p) => (
         <button key={p} onClick={() => onChange(p)}
           className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
-            value === p ? PRIORITY_STYLES[p].chip + ' border-2' : 'bg-gray-50 text-gray-400 border-gray-100 hover:border-gray-200'
+            value === p
+              ? PRIORITY_STYLES[p].chip + ' border-2'
+              : 'bg-gray-50 text-gray-400 border-gray-100 hover:border-gray-200'
           }`}>
           {p}
         </button>
@@ -64,19 +66,33 @@ function PriorityPicker({ value, onChange }) {
   );
 }
 
-/* ── Task card ─────────────────────────────────────────────────────── */
+/* ── Field row helper ───────────────────────────────────────────────── */
+function Field({ icon: Icon, label, children }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-400 mb-1 flex items-center gap-1">
+        {Icon && <Icon size={11} />} {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors bg-white';
+
+/* ── Task card ──────────────────────────────────────────────────────── */
 function TaskCard({ task, onUpdate, onRemove }) {
   const ps = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.Moyen;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      {/* Card header */}
+      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3">
         <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ps.dot}`} />
         <input
           value={task.title}
           onChange={(e) => onUpdate({ title: e.target.value })}
-          placeholder="Titre de la tâche..."
+          placeholder="Désignation de la tâche..."
           className="flex-1 text-sm font-semibold text-gray-800 outline-none placeholder-gray-300 bg-transparent"
         />
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -99,43 +115,67 @@ function TaskCard({ task, onUpdate, onRemove }) {
       {/* Expanded properties */}
       {task.expanded && (
         <div className="border-t border-gray-50 px-4 py-4 space-y-3 bg-gray-50/50">
+
+          {/* Row 1: Ordre / Avis / Type */}
+          <div className="grid grid-cols-3 gap-2">
+            <Field icon={Hash} label="Ordre">
+              <input value={task.ordre} onChange={(e) => onUpdate({ ordre: e.target.value })}
+                placeholder="Ex: 4001427748" className={inputCls} />
+            </Field>
+            <Field icon={Hash} label="Avis">
+              <input value={task.avis} onChange={(e) => onUpdate({ avis: e.target.value })}
+                placeholder="Ex: 12287437" className={inputCls} />
+            </Field>
+            <Field icon={Settings} label="Type">
+              <input value={task.type} onChange={(e) => onUpdate({ type: e.target.value })}
+                placeholder="Ex: ZEST" className={inputCls} />
+            </Field>
+          </div>
+
+          {/* Obj. technique */}
+          <Field icon={MapPin} label="Obj. technique">
+            <input value={task.objTechnique} onChange={(e) => onUpdate({ objTechnique: e.target.value })}
+              placeholder="Ex: SF01-PE-COMM-1" className={inputCls} />
+          </Field>
+
           {/* Priority */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-1">
-              <Flag size={11} /> Priorité
-            </p>
+          <Field icon={Flag} label="Désign.priorité">
             <PriorityPicker value={task.priority} onChange={(v) => onUpdate({ priority: v })} />
+          </Field>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-2">
+            <Field icon={Calendar} label="Date début">
+              <input type="date" value={task.date || ''}
+                onChange={(e) => onUpdate({ date: e.target.value || null })}
+                className={inputCls} />
+            </Field>
+            <Field icon={Calendar} label="Date fin">
+              <input type="date" value={task.dateFin || ''}
+                onChange={(e) => onUpdate({ dateFin: e.target.value || null })}
+                className={inputCls} />
+            </Field>
           </div>
 
-          {/* Zone */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-1">
-              <MapPin size={11} /> Zone
-            </p>
-            <input value={task.zone} onChange={(e) => onUpdate({ zone: e.target.value })}
-              placeholder="Ex: Zone A - Ligne 4"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors bg-white" />
-          </div>
+          {/* Statut système */}
+          <Field icon={Settings} label="Statut système">
+            <input value={task.statutSys} onChange={(e) => onUpdate({ statutSys: e.target.value })}
+              placeholder="Ex: CRÉÉ CCRP DANF" className={inputCls} />
+          </Field>
 
-          {/* Asset tags */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-1">
-              <Tag size={11} /> Tags équipement
-            </p>
-            <input value={task.assetTags} onChange={(e) => onUpdate({ assetTags: e.target.value })}
-              placeholder="Ex: PH-220, Conv-A3..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors bg-white" />
-          </div>
+          {/* Desc. pos.trav. */}
+          <Field icon={FileText} label="Desc. pos.trav.">
+            <textarea value={task.descPosTrav} onChange={(e) => onUpdate({ descPosTrav: e.target.value })}
+              rows={2} placeholder="Ex: Section Mécanique Engrais TSI CRPR"
+              className={`${inputCls} resize-none`} />
+          </Field>
 
-          {/* Procedure */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-1">
-              <FileText size={11} /> Description de la procédure
-            </p>
-            <textarea value={task.procedure} onChange={(e) => onUpdate({ procedure: e.target.value })}
-              rows={3} placeholder="Décrivez la procédure à suivre..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors resize-none bg-white" />
-          </div>
+          {/* Plan entretien */}
+          <Field icon={Hash} label="Plan entretien">
+            <input value={task.planEntretien} onChange={(e) => onUpdate({ planEntretien: e.target.value })}
+              placeholder="Ex: 54495" className={inputCls} />
+          </Field>
+
         </div>
       )}
     </div>
@@ -149,7 +189,7 @@ export default function AddTaskPage() {
 
   const [tasks, setTasks]               = useState([makeTask()]);
   const [currentInput, setCurrentInput] = useState('');
-  const [responsableEmail, setResponsableEmail]     = useState('');
+  const [responsableEmail, setResponsableEmail]       = useState('');
   const [responsablePassword, setResponsablePassword] = useState('');
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
@@ -157,41 +197,31 @@ export default function AddTaskPage() {
   const [agents, setAgents]             = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const inputRef  = useRef(null);
-  const todayYMD  = toYMD(new Date());
+  const inputRef = useRef(null);
+  const todayYMD = toYMD(new Date());
 
   useEffect(() => { getAllAgentNames().then(setAgents).catch(() => {}); }, []);
 
-  /* ── Task management ──────────────────────────────────────────────── */
+  /* ── Task management ─────────────────────────────────────────────── */
   const addTask = () => {
     const title = currentInput.trim();
     setCurrentInput('');
     if (title) {
-      // fill title into last empty task, or create new
       setTasks((prev) => {
         const last = prev[prev.length - 1];
-        if (last && !last.title) {
-          return prev.map((t) => t.id === last.id ? { ...t, title } : t);
-        }
+        if (last && !last.title) return prev.map((t) => t.id === last.id ? { ...t, title } : t);
         return [...prev.map((t) => ({ ...t, expanded: false })), { ...makeTask(), title }];
       });
     } else {
-      // add a blank task card
       setTasks((prev) => [...prev.map((t) => ({ ...t, expanded: false })), makeTask()]);
     }
   };
 
-  const handleInputKeyDown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addTask(); }
-  };
+  const handleInputKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTask(); } };
+  const updateTask = (id, patch) => setTasks((prev) => prev.map((t) => t.id === id ? { ...t, ...patch } : t));
+  const removeTask = (id) => setTasks((prev) => prev.filter((t) => t.id !== id));
 
-  const updateTask = (id, patch) =>
-    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, ...patch } : t));
-
-  const removeTask = (id) =>
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-
-  /* ── Autocomplete ─────────────────────────────────────────────────── */
+  /* ── Autocomplete ────────────────────────────────────────────────── */
   const emailSuggestions = agents.filter(
     (a) => a.email && responsableEmail && a.email.toLowerCase().includes(responsableEmail.toLowerCase())
   );
@@ -199,9 +229,33 @@ export default function AddTaskPage() {
     (a) => a.email?.toLowerCase() === responsableEmail.trim().toLowerCase()
   );
 
-  /* ── Submit ───────────────────────────────────────────────────────── */
+  /* ── Excel import handler ────────────────────────────────────────── */
+  const handleTasksExtracted = (importedTasks) => {
+    setTasks((prev) => {
+      const existingTitles = new Set(prev.map((t) => t.title.trim().toLowerCase()));
+      const newTasks = importedTasks
+        .filter((t) => !existingTitles.has(t.title.trim().toLowerCase()))
+        .map((t) => ({
+          ...makeTask(),
+          title:         t.title         || '',
+          ordre:         t.ordre         || '',
+          avis:          t.avis          || '',
+          type:          t.type          || '',
+          objTechnique:  t.objTechnique  || '',
+          priority:      t.priority      || 'Moyen',
+          date:          t.date          || null,
+          dateFin:       t.dateFin       || null,
+          statutSys:     t.statutSys     || '',
+          descPosTrav:   t.descPosTrav   || '',
+          planEntretien: t.planEntretien || '',
+          expanded:      false,
+        }));
+      return [...prev.map((t) => ({ ...t, expanded: false })), ...newTasks];
+    });
+  };
+
+  /* ── Submit ──────────────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    // flush input
     let allTasks = [...tasks];
     if (currentInput.trim()) {
       allTasks = [...tasks, { ...makeTask(), title: currentInput.trim() }];
@@ -209,7 +263,7 @@ export default function AddTaskPage() {
     }
 
     const validTasks = allTasks.filter((t) => t.title.trim());
-    if (validTasks.length === 0) { setError('Ajoutez au moins une tâche avec un titre.'); return; }
+    if (validTasks.length === 0) { setError('Ajoutez au moins une tâche avec une désignation.'); return; }
     if (!responsableEmail.trim()) { setError("L'email de l'intervenant est obligatoire."); return; }
 
     setLoading(true); setError('');
@@ -235,13 +289,23 @@ export default function AddTaskPage() {
         validTasks.map((task) =>
           createTask(
             {
-              title:     task.title.trim(),
-              procedure: task.procedure.trim(),
-              priority:  task.priority,
-              zone:      task.zone.trim(),
-              assetTags: task.assetTags.trim(),
-              dueDate:   task.date || todayYMD,
-              assignedTo: { email: responsableEmail.trim().toLowerCase(), uid: responsableUid || '' },
+              // Core SAP fields
+              title:         task.title.trim(),
+              ordre:         task.ordre.trim(),
+              avis:          task.avis.trim(),
+              type:          task.type.trim(),
+              objTechnique:  task.objTechnique.trim(),
+              priority:      task.priority,
+              dueDate:       task.date || todayYMD,
+              dateFin:       task.dateFin || '',
+              statutSys:     task.statutSys.trim(),
+              descPosTrav:   task.descPosTrav.trim(),
+              planEntretien: task.planEntretien.trim(),
+              // Legacy fields for dashboard/detail compatibility
+              zone:          task.objTechnique.trim(),
+              assetTags:     [task.ordre, task.avis].filter(Boolean).join(' | '),
+              procedure:     task.descPosTrav.trim(),
+              assignedTo:    { email: responsableEmail.trim().toLowerCase(), uid: responsableUid || '' },
             },
             { uid: user.uid, email: user.email }
           )
@@ -260,26 +324,6 @@ export default function AddTaskPage() {
     } finally { setLoading(false); }
   };
 
-  /* ── Excel import handler ─────────────────────────────────────────── */
-  const handleTasksExtracted = (importedTasks) => {
-    setTasks((prev) => {
-      const existingTitles = new Set(prev.map((t) => t.title.trim().toLowerCase()));
-      const newTasks = importedTasks
-        .filter((t) => !existingTitles.has(t.title.trim().toLowerCase()))
-        .map((t) => ({
-          ...makeTask(),
-          title:     t.title,
-          zone:      t.zone      || '',
-          assetTags: t.assetTags || '',
-          procedure: t.procedure || '',
-          priority:  t.priority  || 'Moyen',
-          date:      t.date      || null,
-          expanded:  false,
-        }));
-      return [...prev.map((t) => ({ ...t, expanded: false })), ...newTasks];
-    });
-  };
-
   const resetForm = (keepEmail = '') => {
     setCredentials(null);
     setTasks([makeTask()]);
@@ -288,7 +332,7 @@ export default function AddTaskPage() {
     setResponsablePassword('');
   };
 
-  /* ── Success screen ───────────────────────────────────────────────── */
+  /* ── Success screen ──────────────────────────────────────────────── */
   if (credentials) {
     return (
       <div className="p-6 max-w-lg mx-auto">
@@ -300,7 +344,7 @@ export default function AddTaskPage() {
             {credentials.count} tâche{credentials.count > 1 ? 's créées' : ' créée'} !
           </h2>
           <p className="text-gray-500 text-sm mb-6">
-            {credentials.isExisting ? 'Assignées au compte existant.' : 'Assignées à l\'intervenant externe.'}
+            {credentials.isExisting ? 'Assignées au compte existant.' : "Assignées à l'intervenant externe."}
           </p>
           <div className="bg-gray-50 rounded-xl p-4 mb-5 text-left">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Intervenant</p>
@@ -327,7 +371,7 @@ export default function AddTaskPage() {
               </button>
             )}
             <button onClick={() => resetForm(credentials.email)}
-              className="w-full flex items-center justify-center gap-2 text-white rounded-xl py-3 text-sm font-bold shadow-md hover:scale-[1.01] transition-all"
+              className="w-full flex items-center justify-center gap-2 text-white rounded-xl py-3 text-sm font-bold shadow-md"
               style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
               <Plus size={16} /> Assigner d'autres tâches
             </button>
@@ -343,7 +387,7 @@ export default function AddTaskPage() {
 
   const validCount = tasks.filter((t) => t.title.trim()).length + (currentInput.trim() ? 1 : 0);
 
-  /* ── Form ─────────────────────────────────────────────────────────── */
+  /* ── Form ────────────────────────────────────────────────────────── */
   return (
     <div className="p-6 max-w-2xl mx-auto pb-10">
       {/* Header */}
@@ -355,15 +399,15 @@ export default function AddTaskPage() {
 
       <div className="space-y-4">
 
-        {/* ── Excel import ──────────────────────────────────────────── */}
+        {/* Excel import */}
         <ExcelTaskImporter onTasksExtracted={handleTasksExtracted} />
 
-        {/* ── Task list ─────────────────────────────────────────────── */}
+        {/* Task list */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-semibold text-gray-700">
               Tâches *{' '}
-              <span className="text-gray-400 font-normal">({tasks.filter(t => t.title.trim()).length})</span>
+              <span className="text-gray-400 font-normal">({tasks.filter((t) => t.title.trim()).length})</span>
             </label>
             <button onClick={() => setTasks((p) => [...p.map((t) => ({ ...t, expanded: false })), makeTask()])}
               className="flex items-center gap-1 text-xs text-green-700 font-semibold hover:text-green-600 transition-colors">
@@ -390,7 +434,7 @@ export default function AddTaskPage() {
           </div>
         </div>
 
-        {/* ── Assign to intervenant ─────────────────────────────────── */}
+        {/* Assign to intervenant */}
         <div className="bg-blue-50 rounded-2xl border border-blue-200 p-5 space-y-3">
           <p className="text-sm font-bold text-blue-700">
             <User size={13} className="inline mr-1" />Assigner à un Intervenant externe *
@@ -430,7 +474,7 @@ export default function AddTaskPage() {
           </div>
         )}
 
-        {/* ── Submit ────────────────────────────────────────────────── */}
+        {/* Submit */}
         <button onClick={handleSubmit} disabled={loading || validCount === 0}
           className="w-full text-white rounded-2xl py-4 text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.01]"
           style={{ background: 'linear-gradient(135deg, #1c3b72, #0f2347)' }}>
