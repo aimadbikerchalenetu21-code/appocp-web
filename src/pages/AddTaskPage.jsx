@@ -38,7 +38,14 @@ let _id = 0;
 const uid = () => ++_id;
 
 function makeTask() {
-  return { id: uid(), title: '', priority: 'Moyen', zone: '', assetTags: '', procedure: '', expanded: true };
+  return { id: uid(), title: '', priority: 'Moyen', zone: '', assetTags: '', procedure: '', date: null, expanded: true };
+}
+
+/* ── Format YMD → "DD/MM" for display ─────────────────────────────────── */
+function fmtShort(ymd) {
+  if (!ymd) return '';
+  const [, m, d] = ymd.split('-');
+  return `${d}/${m}`;
 }
 
 /* ── Small priority picker ─────────────────────────────────────────── */
@@ -73,6 +80,11 @@ function TaskCard({ task, onUpdate, onRemove }) {
           className="flex-1 text-sm font-semibold text-gray-800 outline-none placeholder-gray-300 bg-transparent"
         />
         <div className="flex items-center gap-1 flex-shrink-0">
+          {task.date && (
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+              📅 {fmtShort(task.date)}
+            </span>
+          )}
           <button onClick={() => onUpdate({ expanded: !task.expanded })}
             className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors">
             {task.expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -230,7 +242,7 @@ export default function AddTaskPage() {
               priority:  task.priority,
               zone:      task.zone.trim(),
               assetTags: task.assetTags.trim(),
-              dueDate:   selectedDate,
+              dueDate:   task.date || selectedDate,
               assignedTo: { email: responsableEmail.trim().toLowerCase(), uid: responsableUid || '' },
             },
             { uid: user.uid, email: user.email }
@@ -251,13 +263,21 @@ export default function AddTaskPage() {
   };
 
   /* ── Excel import handler ─────────────────────────────────────────── */
-  const handleTasksExtracted = (importedTitles) => {
+  const handleTasksExtracted = (importedTasks) => {
     setTasks((prev) => {
       const existingTitles = new Set(prev.map((t) => t.title.trim().toLowerCase()));
-      const newTasks = importedTitles
-        .filter((title) => !existingTitles.has(title.trim().toLowerCase()))
-        .map((title) => ({ ...makeTask(), title, expanded: false }));
-      // collapse existing tasks and append new ones
+      const newTasks = importedTasks
+        .filter((t) => !existingTitles.has(t.title.trim().toLowerCase()))
+        .map((t) => ({
+          ...makeTask(),
+          title:     t.title,
+          zone:      t.zone      || '',
+          assetTags: t.assetTags || '',
+          procedure: t.procedure || '',
+          priority:  t.priority  || 'Moyen',
+          date:      t.date      || null,
+          expanded:  false,
+        }));
       return [...prev.map((t) => ({ ...t, expanded: false })), ...newTasks];
     });
   };

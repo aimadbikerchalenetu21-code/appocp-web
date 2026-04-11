@@ -4,27 +4,134 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, ChevronDown, X } fro
 
 const TARGET_SHEET = 'PLAN DE CHARGE TSP';
 
+/* ── Column name normalizer ─────────────────────────────────────────────── */
+const norm = (s) =>
+  String(s ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[.\s\-_]/g, '');
+
+/* ── Known column map: normalized name → field ──────────────────────────── */
+const KNOWN_COLS = {
+  designation:     'title',
+  designations:    'title',
+  libelle:         'title',
+  intitule:        'title',
+  tache:           'title',
+  description:     'procedure',
+  descpostrav:     'procedure',
+  descriptionpost: 'procedure',
+  objtechnique:    'zone',
+  objetechnique:   'zone',
+  objectiftechni:  'zone',
+  objtechn:        'zone',
+  datedebut:       'dateDebut',
+  datededebut:     'dateDebut',
+  datedebuts:      'dateDebut',
+  designpriorite:  'priorityRaw',
+  priorite:        'priorityRaw',
+  priorites:       'priorityRaw',
+  ordre:           'ordre',
+  numordre:        'ordre',
+  avis:            'avis',
+  type:            'type',
+  planentretien:   'planEntretien',
+  statutsysteme:   'statutSys',
+  statutsys:       'statutSys',
+};
+
+/* ── Priority mapping (SAP values → app values) ─────────────────────────── */
+function mapPriority(raw) {
+  if (!raw && raw !== 0) return 'Moyen';
+  const v = String(raw).trim().toLowerCase();
+  if (['1', 'vt', 'vh', 'très haute', 'tres haute', 'very high', 'critique', 'critical'].some((x) => v === x || v.startsWith(x)))
+    return 'Critique';
+  if (['2', 'haute', 'high', 'élevé', 'eleve', 'h'].some((x) => v === x || v.startsWith(x)))
+    return 'Élevé';
+  if (['4', 'basse', 'faible', 'low', 'l', 'b'].some((x) => v === x || v.startsWith(x)))
+    return 'Faible';
+  return 'Moyen';
+}
+
+/* ── Excel date → YYYY-MM-DD ─────────────────────────────────────────────── */
+function parseDate(val) {
+  if (!val && val !== 0) return null;
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return null;
+    return fmt(val);
+  }
+  if (typeof val === 'number') {
+    // Excel serial date (Windows epoch: Dec 30, 1899)
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return isNaN(d.getTime()) ? null : fmt(d);
+  }
+  if (typeof val === 'string') {
+    // M/D/YYYY or DD/MM/YYYY
+    const mdy = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (mdy) {
+      // Heuristic: if first number > 12, it's D/M/YYYY
+      const [, a, b, y] = mdy;
+      const [mo, dy] = parseInt(a) > 12 ? [b, a] : [a, b];
+      const d = new Date(parseInt(y), parseInt(mo) - 1, parseInt(dy));
+      return isNaN(d.getTime()) ? null : fmt(d);
+    }
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : fmt(d);
+  }
+  return null;
+}
+
+function fmt(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /**
  * ExcelTaskImporter
  * Props:
- *   onTasksExtracted(tasks: string[]) — called with deduplicated task strings
+ *   onTasksExtracted(tasks: TaskObject[]) — always passes full objects:
+ *   { title, date, zone, assetTags, procedure, priority }
  */
 export default function ExcelTaskImporter({ onTasksExtracted }) {
   const fileInputRef = useRef(null);
-  const [dragging, setDragging]     = useState(false);
-  const [error, setError]           = useState('');
-  const [success, setSuccess]       = useState('');
-  const [fileName, setFileName]     = useState('');
+  const [dragging, setDragging]       = useState(false);
+  const [error, setError]             = useState('');
+  const [success, setSuccess]         = useState('');
+  const [fileName, setFileName]       = useState('');
 
-  // Column-selection state (when sheet has multiple text columns)
-  const [columns, setColumns]       = useState([]);   // [{key, label}]
-  const [pendingRows, setPendingRows] = useState([]);  // raw parsed rows
+  // Fallback: column selector when file doesn't match known schema
+  const [columns, setColumns]         = useState([]);
+  const [pendingRows, setPendingRows] = useState([]);
   const [selectedCol, setSelectedCol] = useState('');
 
-  /* ── File validation ───────────────────────────────────────────────── */
   const isValidExt = (name) => /\.(xlsx|xls)$/i.test(name);
 
-  /* ── Core parse logic ──────────────────────────────────────────────── */
+  /* ── Build task objects from rows using detected field map ─────────────── */
+  const buildTasks = (rows, fieldMap) => {
+    return rows
+      .map((row) => {
+        const get = (field) => String(row[fieldMap[field]] ?? '').trim();
+
+        const title = get('title');
+        if (!title) return null;
+
+        const ordre   = get('ordre');
+        const avis    = get('avis');
+        const assetParts = [ordre && `Ordre: ${ordre}`, avis && `Avis: ${avis}`].filter(Boolean);
+
+        return {
+          title,
+          date:      parseDate(row[fieldMap['dateDebut']]),
+          zone:      get('zone'),
+          assetTags: assetParts.join(' | '),
+          procedure: get('procedure'),
+          priority:  mapPriority(get('priorityRaw')),
+        };
+      })
+      .filter(Boolean);
+  };
+
+  /* ── Core parse logic ──────────────────────────────────────────────────── */
   const parseFile = (file) => {
     setError(''); setSuccess(''); setColumns([]); setPendingRows([]); setSelectedCol('');
 
@@ -39,9 +146,8 @@ export default function ExcelTaskImporter({ onTasksExtracted }) {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
 
-        // ── Find target sheet ────────────────────────────────────────
         const sheetName = workbook.SheetNames.find(
           (n) => n.trim().toUpperCase() === TARGET_SHEET.toUpperCase()
         );
@@ -54,38 +160,87 @@ export default function ExcelTaskImporter({ onTasksExtracted }) {
         }
 
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        const rows  = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
 
         if (!rows.length) {
-          setError('Aucune tâche trouvée dans cette feuille.');
+          setError('Aucune donnée trouvée dans cette feuille.');
           return;
         }
 
-        // ── Detect text columns ──────────────────────────────────────
         const allKeys = Object.keys(rows[0]);
 
-        // Prefer columns whose header contains task-related keywords
-        const TASK_KEYWORDS = ['tâche', 'tache', 'libellé', 'libelle', 'description', 'activité', 'activite', 'travail', 'intitulé', 'intitule'];
-        const taskKey = allKeys.find((k) =>
-          TASK_KEYWORDS.some((kw) => k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(kw.replace(/[éèêë]/g, 'e')))
-        );
+        /* Build fieldMap: field → original column key */
+        const fieldMap = {};
+        for (const key of allKeys) {
+          const n = norm(key);
+          if (KNOWN_COLS[n]) {
+            const field = KNOWN_COLS[n];
+            if (!fieldMap[field]) fieldMap[field] = key; // first match wins
+          }
+        }
 
-        if (taskKey) {
-          // Auto-select the most likely column
-          extractAndReturn(rows, taskKey);
+        if (fieldMap['title']) {
+          /* ── Full structured extraction ─────────────────────────────── */
+          // Re-parse with cellDates to get proper Date objects for date fields
+          const rowsDated = XLSX.utils.sheet_to_json(
+            workbook.Sheets[sheetName],
+            { defval: '', raw: true }
+          );
+          // For date column, use raw numeric values; for others use string version
+          const tasks = rowsDated.map((rawRow, i) => {
+            const strRow = rows[i];
+            const get = (field) => String(strRow[fieldMap[field]] ?? '').trim();
+            const title = get('title');
+            if (!title) return null;
+
+            const ordre = get('ordre');
+            const avis  = get('avis');
+            const assetParts = [ordre && `Ordre: ${ordre}`, avis && `Avis: ${avis}`].filter(Boolean);
+
+            // Use raw value for date parsing (could be number or string)
+            const rawDateVal = fieldMap['dateDebut'] ? rawRow[fieldMap['dateDebut']] : null;
+            const date = parseDate(rawDateVal);
+
+            return {
+              title,
+              date,
+              zone:      get('zone'),
+              assetTags: assetParts.join(' | '),
+              procedure: get('procedure'),
+              priority:  mapPriority(get('priorityRaw')),
+            };
+          }).filter(Boolean);
+
+          if (tasks.length === 0) {
+            setError('Aucune tâche (Désignation) trouvée dans la feuille.');
+            return;
+          }
+
+          const datedCount = tasks.filter((t) => t.date).length;
+          setSuccess(
+            `${tasks.length} tâche${tasks.length > 1 ? 's' : ''} importée${tasks.length > 1 ? 's' : ''}` +
+            (datedCount > 0 ? ` · ${datedCount} avec date planifiée` : '')
+          );
+          setColumns([]);
+          setPendingRows([]);
+          onTasksExtracted(tasks);
         } else {
-          // Show column selector — only string-like columns
+          /* ── Fallback: generic text-column selector ─────────────────── */
           const textCols = allKeys.filter((k) =>
             rows.some((r) => typeof r[k] === 'string' && r[k].trim().length > 2)
           );
 
           if (textCols.length === 0) {
-            setError('Aucune colonne texte trouvée dans la feuille.');
+            setError('Aucune colonne Désignation ou colonne texte trouvée dans la feuille.');
             return;
           }
 
           if (textCols.length === 1) {
-            extractAndReturn(rows, textCols[0]);
+            const tasks = rows
+              .map((r) => ({ title: String(r[textCols[0]] ?? '').trim(), date: null, zone: '', assetTags: '', procedure: '', priority: 'Moyen' }))
+              .filter((t) => t.title.length > 0);
+            setSuccess(`${tasks.length} tâche${tasks.length > 1 ? 's' : ''} importée${tasks.length > 1 ? 's' : ''}`);
+            onTasksExtracted(tasks);
           } else {
             setColumns(textCols.map((k) => ({ key: k, label: k })));
             setPendingRows(rows);
@@ -100,28 +255,17 @@ export default function ExcelTaskImporter({ onTasksExtracted }) {
     reader.readAsArrayBuffer(file);
   };
 
-  /* ── Extract tasks from chosen column ──────────────────────────────── */
-  const extractAndReturn = (rows, colKey) => {
-    const tasks = rows
-      .map((r) => String(r[colKey] ?? '').trim())
-      .filter((t) => t.length > 0);
-
-    if (tasks.length === 0) {
-      setError('Aucune tâche trouvée dans la colonne sélectionnée.');
-      return;
-    }
-
-    setSuccess(`${tasks.length} tâche${tasks.length > 1 ? 's' : ''} importée${tasks.length > 1 ? 's' : ''} depuis le Plan de Charge TSP`);
-    setColumns([]);
-    setPendingRows([]);
+  const handleColumnConfirm = () => {
+    if (!selectedCol || !pendingRows.length) return;
+    const tasks = pendingRows
+      .map((r) => ({ title: String(r[selectedCol] ?? '').trim(), date: null, zone: '', assetTags: '', procedure: '', priority: 'Moyen' }))
+      .filter((t) => t.title.length > 0);
+    if (tasks.length === 0) { setError('Aucune tâche trouvée dans la colonne sélectionnée.'); return; }
+    setSuccess(`${tasks.length} tâche${tasks.length > 1 ? 's' : ''} importée${tasks.length > 1 ? 's' : ''}`);
+    setColumns([]); setPendingRows([]);
     onTasksExtracted(tasks);
   };
 
-  const handleColumnConfirm = () => {
-    if (selectedCol && pendingRows.length) extractAndReturn(pendingRows, selectedCol);
-  };
-
-  /* ── Drag & drop handlers ───────────────────────────────────────────── */
   const handleDrop = (e) => {
     e.preventDefault(); setDragging(false);
     const file = e.dataTransfer.files?.[0];
@@ -139,7 +283,6 @@ export default function ExcelTaskImporter({ onTasksExtracted }) {
     setColumns([]); setPendingRows([]); setSelectedCol('');
   };
 
-  /* ── Render ─────────────────────────────────────────────────────────── */
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
       <div className="flex items-center gap-2 mb-3">
@@ -180,15 +323,11 @@ export default function ExcelTaskImporter({ onTasksExtracted }) {
         </div>
       )}
 
-      {/* Column selector */}
+      {/* Fallback column selector */}
       {columns.length > 0 && (
         <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <p className="text-sm font-semibold text-blue-700 mb-1">
-            Plusieurs colonnes texte détectées
-          </p>
-          <p className="text-xs text-blue-500 mb-3">
-            Quelle colonne contient les tâches ?
-          </p>
+          <p className="text-sm font-semibold text-blue-700 mb-1">Plusieurs colonnes texte détectées</p>
+          <p className="text-xs text-blue-500 mb-3">Quelle colonne contient les tâches ?</p>
           <div className="relative mb-3">
             <select
               value={selectedCol}
