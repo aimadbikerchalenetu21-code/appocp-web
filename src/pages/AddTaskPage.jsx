@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { createTask, createResponsableAccount, getAllAgentNames } from '../services/firestoreService';
+import { createTask, createResponsableAccount, getAllAgentNames, getAllResponsables } from '../services/firestoreService';
 import {
   User, AlertCircle, CheckCircle,
   Send, Plus, X, ChevronDown, ChevronUp, Flag,
@@ -189,13 +189,17 @@ export default function AddTaskPage() {
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
   const [credentials, setCredentials]   = useState(null);
-  const [agents, setAgents]             = useState([]);
+  const [agents, setAgents]             = useState([]);       // collaborateurs OCP
+  const [responsables, setResponsables] = useState([]);       // intervenants externes existants
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const inputRef = useRef(null);
   const todayYMD = toYMD(new Date());
 
-  useEffect(() => { getAllAgentNames().then(setAgents).catch(() => {}); }, []);
+  useEffect(() => {
+    getAllAgentNames().then(setAgents).catch(() => {});
+    getAllResponsables().then(setResponsables).catch(() => {});
+  }, []);
 
   /* ── Task management ─────────────────────────────────────────────── */
   const addTask = () => {
@@ -216,13 +220,26 @@ export default function AddTaskPage() {
   const updateTask = (id, patch) => setTasks((prev) => prev.map((t) => t.id === id ? { ...t, ...patch } : t));
   const removeTask = (id) => setTasks((prev) => prev.filter((t) => t.id !== id));
 
-  /* ── Autocomplete ────────────────────────────────────────────────── */
-  const emailSuggestions = agents.filter(
-    (a) => a.email && responsableEmail && a.email.toLowerCase().includes(responsableEmail.toLowerCase())
+  /* ── Autocomplete — merge agents + responsables ─────────────────── */
+  // All known accounts (both collections)
+  const allKnownEmails = [
+    ...agents.map((a) => ({ email: a.email, uid: a.uid, name: a.name, type: 'agent' })),
+    ...responsables.map((r) => ({ email: r.email, uid: r.uid, name: r.name, type: 'responsable' })),
+  ].filter((x) => x.email);
+
+  const emailSuggestions = allKnownEmails.filter(
+    (a) => responsableEmail && a.email.toLowerCase().includes(responsableEmail.toLowerCase())
   );
-  const isExistingAgent = !!agents.find(
+
+  // Existing = found in responsables OR agents collection
+  const existingResponsable = responsables.find(
+    (r) => r.email?.toLowerCase() === responsableEmail.trim().toLowerCase()
+  );
+  const existingAgent = agents.find(
     (a) => a.email?.toLowerCase() === responsableEmail.trim().toLowerCase()
   );
+  const isExistingAccount = !!(existingResponsable || existingAgent);
+  const existingUid = existingResponsable?.uid || existingAgent?.uid || null;
 
   /* ── Excel import handler ────────────────────────────────────────── */
   const handleTasksExtracted = (importedTasks) => {
@@ -263,11 +280,9 @@ export default function AddTaskPage() {
 
     setLoading(true); setError('');
     try {
-      let responsableUid = agents.find(
-        (a) => a.email?.toLowerCase() === responsableEmail.trim().toLowerCase()
-      )?.uid || null;
+      let responsableUid = existingUid;
 
-      if (!isExistingAgent) {
+      if (!isExistingAccount) {
         if (!responsablePassword.trim()) {
           setError('Mot de passe requis pour créer un nouveau compte intervenant.');
           setLoading(false); return;
@@ -309,8 +324,8 @@ export default function AddTaskPage() {
 
       setCredentials({
         email:      responsableEmail.trim(),
-        password:   isExistingAgent ? null : responsablePassword,
-        isExisting: isExistingAgent,
+        password:   isExistingAccount ? null : responsablePassword,
+        isExisting: isExistingAccount,
         count:      validTasks.length,
       });
     } catch (e) {
@@ -443,16 +458,24 @@ export default function AddTaskPage() {
             {showSuggestions && emailSuggestions.length > 0 && (
               <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg overflow-hidden">
                 {emailSuggestions.map((a) => (
-                  <button key={a.uid} onMouseDown={() => { setResponsableEmail(a.email); setShowSuggestions(false); }}
+                  <button key={a.email} onMouseDown={() => { setResponsableEmail(a.email); setShowSuggestions(false); }}
                     className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <User size={13} className="text-gray-400" />{a.email}
-                    {a.name && <span className="text-gray-400 text-xs">({a.name})</span>}
+                    <User size={13} className="text-gray-400 flex-shrink-0" />
+                    <span className="flex-1 truncate">{a.email}{a.name && <span className="text-gray-400 text-xs ml-1">({a.name})</span>}</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${a.type === 'responsable' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {a.type === 'responsable' ? 'Intervenant' : 'Collaborateur'}
+                    </span>
                   </button>
                 ))}
               </div>
             )}
           </div>
-          {responsableEmail && !isExistingAgent && (
+          {isExistingAccount && responsableEmail && (
+            <p className="text-xs text-green-700 font-semibold flex items-center gap-1">
+              <CheckCircle size={12} /> Compte existant — aucun mot de passe requis
+            </p>
+          )}
+          {responsableEmail && !isExistingAccount && (
             <div>
               <p className="text-xs text-blue-600 mb-2">Laisser vide si l'intervenant a déjà un compte</p>
               <input type="password" value={responsablePassword}

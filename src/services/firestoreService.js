@@ -145,3 +145,8 @@ export const getAllAgentNames = async () => {
   const snap = await getDocs(collection(db, 'agents'));
   return snap.docs.map((d) => d.data());
 };
+
+export const getAllResponsables = async () => {
+  const snap = await getDocs(collection(db, 'responsables'));
+  return snap.docs.map((d) => d.data());
+};
