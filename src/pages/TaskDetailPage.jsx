@@ -363,12 +363,17 @@ export default function TaskDetailPage() {
                   <CheckCircle size={18} /> OK
                 </button>
                 <button
-                  onClick={() => { setSelectedAction(selectedAction === 'blocked' ? null : 'blocked'); setDescError(''); }}
-                  className="flex-1 flex items-center justify-center gap-2 py-5 text-sm font-extrabold text-white transition-all hover:brightness-110"
+                  onClick={() => { if (status !== 'in-progress') return; setSelectedAction(selectedAction === 'blocked' ? null : 'blocked'); setDescError(''); }}
+                  disabled={status !== 'in-progress'}
+                  className="flex-1 flex items-center justify-center gap-2 py-5 text-sm font-extrabold transition-all"
                   style={{
-                    background: selectedAction === 'blocked'
-                      ? 'linear-gradient(135deg, #d97706, #b45309)'
-                      : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    color: status !== 'in-progress' ? '#d1d5db' : 'white',
+                    background: status !== 'in-progress'
+                      ? '#f3f4f6'
+                      : selectedAction === 'blocked'
+                        ? 'linear-gradient(135deg, #d97706, #b45309)'
+                        : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    cursor: status !== 'in-progress' ? 'not-allowed' : 'pointer',
                   }}>
                   <AlertTriangle size={18} /> Point Bloquant
                 </button>
