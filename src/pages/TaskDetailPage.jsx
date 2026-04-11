@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { updateTaskStatus, createNotification } from '../services/firestoreService';
+import { updateTaskStatus, createNotification, addTaskOperator } from '../services/firestoreService';
 
 function tsToDate(ts) {
   if (!ts) return null;
@@ -24,7 +24,7 @@ function fmtDuration(startTs, endTs) {
 }
 import {
   ClipboardList, Flag, User, CheckCircle, AlertTriangle, ArrowLeft,
-  Cog, CheckSquare, Square, Camera, X,
+  Cog, CheckSquare, Square, Camera, X, UserPlus,
 } from 'lucide-react';
 
 const STATUS = {
@@ -65,6 +65,13 @@ export default function TaskDetailPage() {
   const [loading, setLoading]           = useState(false);
   const [images, setImages]             = useState([]);
 
+  // Operators
+  const [operators, setOperators]           = useState(task?.operators || []);
+  const [showAddOp, setShowAddOp]           = useState(false);
+  const [newOpEmail, setNewOpEmail]         = useState('');
+  const [addingOp, setAddingOp]             = useState(false);
+  const [opError, setOpError]               = useState('');
+
   if (!task) {
     return (
       <div className="p-6 text-center">
@@ -96,6 +103,17 @@ export default function TaskDetailPage() {
       });
     }
     setStatus('completed'); setSelectedAction(null); setLoading(false);
+  };
+
+  const handleAddOperator = async () => {
+    const email = newOpEmail.trim().toLowerCase();
+    if (!email) { setOpError('Email requis.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setOpError('Email invalide.'); return; }
+    if (operators.includes(email)) { setOpError('Cet intervenant est déjà ajouté.'); return; }
+    setAddingOp(true); setOpError('');
+    await addTaskOperator(task.id, email);
+    setOperators((prev) => [...prev, email]);
+    setNewOpEmail(''); setShowAddOp(false); setAddingOp(false);
   };
 
   const handleSubmitBlocked = async () => {
@@ -217,25 +235,71 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
-        {/* Intervenants externes ayant opéré */}
+        {/* Intervenants externes ayant opéré — visible to all roles */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-3">
             <User size={15} className="text-green-600" />
             <h2 className="font-bold text-gray-700 text-sm">Intervenants externes ayant opéré</h2>
           </div>
-          {task.assignedTo?.email ? (
-            <div className="flex items-center gap-2 py-2">
+
+          {/* Primary assignee */}
+          {task.assignedTo?.email && (
+            <div className="flex items-center gap-2 py-2 border-b border-gray-50">
               <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-700">
                 {task.assignedTo.email[0].toUpperCase()}
               </div>
               <span className="text-sm text-gray-700">{task.assignedTo.email}</span>
+              <span className="ml-auto text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-semibold">Assigné</span>
             </div>
-          ) : (
+          )}
+
+          {/* Additional operators */}
+          {operators.length === 0 && !task.assignedTo?.email && (
             <p className="text-xs text-gray-400 text-center py-2">Aucun intervenant enregistré.</p>
           )}
-          <button className="w-full mt-2 border border-dashed border-blue-200 rounded-xl py-2.5 text-sm text-blue-500 font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1">
-            <span className="text-base leading-none">⊕</span> Ajouter un intervenant
-          </button>
+          {operators.map((email) => (
+            <div key={email} className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0">
+              <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700">
+                {email[0].toUpperCase()}
+              </div>
+              <span className="text-sm text-gray-700">{email}</span>
+            </div>
+          ))}
+
+          {/* Add operator — only for responsable */}
+          {role === 'responsable' && (
+            <>
+              {!showAddOp ? (
+                <button onClick={() => setShowAddOp(true)}
+                  className="w-full mt-2 border border-dashed border-blue-200 rounded-xl py-2.5 text-sm text-blue-500 font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5">
+                  <UserPlus size={14} /> Ajouter un intervenant
+                </button>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  <input
+                    type="email"
+                    value={newOpEmail}
+                    onChange={(e) => { setNewOpEmail(e.target.value); setOpError(''); }}
+                    placeholder="Email de l'intervenant"
+                    className="w-full border-2 border-blue-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 transition-colors"
+                    autoFocus
+                  />
+                  {opError && <p className="text-xs text-red-500">{opError}</p>}
+                  <div className="flex gap-2">
+                    <button onClick={handleAddOperator} disabled={addingOp}
+                      className="flex-1 py-2.5 text-sm font-bold text-white rounded-xl disabled:opacity-50 transition-all"
+                      style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+                      {addingOp ? 'Ajout...' : 'Confirmer'}
+                    </button>
+                    <button onClick={() => { setShowAddOp(false); setNewOpEmail(''); setOpError(''); }}
+                      className="px-4 py-2.5 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Blocked reason */}

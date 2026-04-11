@@ -1,6 +1,6 @@
 import {
   collection, addDoc, updateDoc, doc, setDoc, getDocs, getDoc,
-  onSnapshot, query, where, serverTimestamp,
+  onSnapshot, query, where, serverTimestamp, arrayUnion,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -101,6 +101,12 @@ export const subscribeToAgentTasks = (uid, callback) => {
     const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     callback(docs);
+  });
+};
+
+export const addTaskOperator = async (taskId, operator) => {
+  await updateDoc(doc(db, 'tasks', taskId), {
+    operators: arrayUnion(operator),
   });
 };
 
