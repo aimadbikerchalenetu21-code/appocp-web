@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { updateTaskStatus, createNotification, addTaskOperator } from '../services/firestoreService';
+import { updateTaskStatus, createNotification, addTaskOperator, deleteTask } from '../services/firestoreService';
 
 function tsToDate(ts) {
   if (!ts) return null;
@@ -24,7 +24,7 @@ function fmtDuration(startTs, endTs) {
 }
 import {
   ClipboardList, Flag, User, CheckCircle, AlertTriangle, ArrowLeft,
-  Cog, CheckSquare, Square, Camera, X, UserPlus,
+  Cog, CheckSquare, Square, Camera, X, UserPlus, Trash2,
 } from 'lucide-react';
 
 const STATUS = {
@@ -46,7 +46,7 @@ const PRIORITY_COLORS = {
 };
 
 export default function TaskDetailPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const task = location.state?.task;
@@ -151,7 +151,18 @@ export default function TaskDetailPage() {
           className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors flex-shrink-0">
           <ArrowLeft size={16} />
         </button>
-        <h1 className="text-base font-extrabold text-white">Détails de la tâche</h1>
+        <h1 className="text-base font-extrabold text-white flex-1">Détails de la tâche</h1>
+        {/* Delete button — only for agent who created the task */}
+        {role === 'agent' && task.createdBy?.uid === user?.uid && (
+          <button onClick={() => {
+            if (window.confirm('Supprimer cette tâche définitivement ?')) {
+              deleteTask(task.id);
+              navigate(-1);
+            }
+          }} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-red-500/80 transition-colors flex-shrink-0">
+            <Trash2 size={15} />
+          </button>
+        )}
       </div>
 
       {/* Scrollable content */}

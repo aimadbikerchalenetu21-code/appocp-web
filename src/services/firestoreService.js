@@ -1,5 +1,5 @@
 import {
-  collection, addDoc, updateDoc, doc, setDoc, getDocs, getDoc,
+  collection, addDoc, updateDoc, deleteDoc, doc, setDoc, getDocs, getDoc,
   onSnapshot, query, where, serverTimestamp, arrayUnion,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -102,6 +102,10 @@ export const subscribeToAgentTasks = (uid, callback) => {
     docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     callback(docs);
   });
+};
+
+export const deleteTask = async (taskId) => {
+  await deleteDoc(doc(db, 'tasks', taskId));
 };
 
 export const addTaskOperator = async (taskId, operator) => {

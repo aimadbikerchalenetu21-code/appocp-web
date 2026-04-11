@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { subscribeToAllTasks, getAgentProfile } from '../services/firestoreService';
+import { subscribeToAllTasks, getAgentProfile, deleteTask } from '../services/firestoreService';
 import {
   CheckCircle, AlertCircle, Clock, Plus, ClipboardList, Flag,
   Bell, CalendarDays, History, User, LogOut, Timer,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Trash2,
 } from 'lucide-react';
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
@@ -385,6 +385,7 @@ export default function AgentDashboard() {
                 <div className="space-y-2">
                   {selTasks.map((task) => {
                     const sc = STATUS_STYLES[task.status] || STATUS_STYLES.pending;
+                    const canDelete = task.createdBy?.uid === user?.uid;
                     return (
                       <div key={task.id}
                         onClick={() => navigate('/task/' + task.id, { state: { task } })}
@@ -417,6 +418,12 @@ export default function AgentDashboard() {
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
                           {sc.label}
                         </span>
+                        {canDelete && (
+                          <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Supprimer cette tâche ?')) deleteTask(task.id); }}
+                            className="p-1.5 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -521,6 +528,7 @@ export default function AgentDashboard() {
                 <div className="space-y-2.5">
                   {tasks.map((task) => {
                     const sc = STATUS_STYLES[task.status] || STATUS_STYLES.pending;
+                    const canDelete = task.createdBy?.uid === user?.uid;
                     return (
                       <div key={task.id}
                         onClick={() => navigate('/task/' + task.id, { state: { task } })}
@@ -550,6 +558,12 @@ export default function AgentDashboard() {
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
                           {sc.label}
                         </span>
+                        {canDelete && (
+                          <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Supprimer cette tâche ?')) deleteTask(task.id); }}
+                            className="p-1.5 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     );
                   })}
