@@ -104,6 +104,14 @@ export const subscribeToAgentTasks = (uid, callback) => {
   });
 };
 
+export const subscribeToAllTasks = (callback) => {
+  return onSnapshot(collection(db, 'tasks'), (snap) => {
+    const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    callback(docs);
+  });
+};
+
 export const createNotification = async (agentUid, data) => {
   await addDoc(collection(db, 'notifications'), {
     userId: agentUid, ...data, read: false, createdAt: serverTimestamp(),
