@@ -1,10 +1,34 @@
 import {
-  collection, addDoc, updateDoc, doc, setDoc, getDocs,
+  collection, addDoc, updateDoc, doc, setDoc, getDocs, getDoc,
   onSnapshot, query, where, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 const FIREBASE_API_KEY = 'AIzaSyBqptWexrHqhfgo0o0QdF0Qns1ev35IrBM';
+
+export const ADMIN_EMAILS = ['Amine.ZIRAR@ocpgroup.ma'];
+
+export const checkResponsableExists = async (email) => {
+  const snap = await getDocs(query(collection(db, 'responsables'), where('email', '==', email)));
+  if (!snap.empty) return true;
+  try {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: '___probe___', returnSecureToken: false }),
+      }
+    );
+    const data = await res.json();
+    if (!data.error) return true;
+    const msg = data.error.message || '';
+    if (msg === 'INVALID_PASSWORD') return true;
+    return false;
+  } catch {
+    return false;
+  }
+};
 
 export const createResponsableAccount = async (email, password) => {
   const res = await fetch(
@@ -23,7 +47,28 @@ export const createResponsableAccount = async (email, password) => {
 };
 
 export const registerAgent = async ({ uid, name, email }) => {
-  await setDoc(doc(db, 'agents', uid), { uid, name, email, role: 'agent', createdAt: serverTimestamp() });
+  await setDoc(doc(db, 'agents', uid), {
+    uid, name, email, role: 'agent',
+    approvalStatus: 'pending',
+    createdAt: serverTimestamp(),
+  });
+};
+
+export const getAgentProfile = async (uid) => {
+  const snap = await getDoc(doc(db, 'agents', uid));
+  return snap.exists() ? snap.data() : null;
+};
+
+export const subscribeToAllAgents = (callback) => {
+  return onSnapshot(collection(db, 'agents'), (snap) => {
+    const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    callback(docs);
+  });
+};
+
+export const updateAgentApproval = async (uid, approvalStatus) => {
+  await updateDoc(doc(db, 'agents', uid), { approvalStatus });
 };
 
 export const createTask = async (taskData, createdBy) => {

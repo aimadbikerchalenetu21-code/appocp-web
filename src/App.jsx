@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import LoginPage        from './pages/LoginPage';
-import RegisterPage     from './pages/RegisterPage';
-import AgentDashboard   from './pages/AgentDashboard';
+import LoginPage          from './pages/LoginPage';
+import RegisterPage       from './pages/RegisterPage';
+import AgentDashboard     from './pages/AgentDashboard';
 import ResponsableDashboard from './pages/ResponsableDashboard';
-import AddTaskPage      from './pages/AddTaskPage';
-import TaskDetailPage   from './pages/TaskDetailPage';
-import CalendarPage     from './pages/CalendarPage';
-import NotificationsPage from './pages/NotificationsPage';
-import SettingsPage     from './pages/SettingsPage';
-import SafetyPage       from './pages/SafetyPage';
+import AddTaskPage        from './pages/AddTaskPage';
+import TaskDetailPage     from './pages/TaskDetailPage';
+import CalendarPage       from './pages/CalendarPage';
+import NotificationsPage  from './pages/NotificationsPage';
+import SettingsPage       from './pages/SettingsPage';
+import SafetyPage         from './pages/SafetyPage';
+import AdminPage          from './pages/AdminPage';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -18,8 +19,17 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
+function AdminRoute({ children }) {
+  const { user, role, loading } = useAuth();
+  if (loading) return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Chargement...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (role !== 'admin') return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 function DashboardRouter() {
   const { role } = useAuth();
+  if (role === 'admin') return <Navigate to="/admin" replace />;
   return role === 'responsable' ? <ResponsableDashboard /> : <AgentDashboard />;
 }
 
@@ -31,6 +41,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/login"    element={!user ? <LoginPage />    : <Navigate to="/dashboard" replace />} />
       <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
+
+      {/* Admin panel — standalone, no sidebar */}
+      <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
 
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />

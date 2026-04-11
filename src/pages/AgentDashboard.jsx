@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signOut } from 'firebase/auth';
+import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { subscribeToAgentTasks } from '../services/firestoreService';
-import { CheckCircle, AlertCircle, Clock, Plus, ClipboardList, Flag, User } from 'lucide-react';
+import { subscribeToAgentTasks, getAgentProfile } from '../services/firestoreService';
+import { CheckCircle, AlertCircle, Clock, Plus, ClipboardList, Flag, User, LogOut } from 'lucide-react';
 
 const STATUS = {
   completed:     { label: 'Terminé',    color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-400' },
@@ -12,14 +14,70 @@ const STATUS = {
 };
 
 export default function AgentDashboard() {
-  const { user } = useAuth();
+  const { user, setRole } = useAuth();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks]           = useState([]);
+  const [approvalStatus, setApprovalStatus] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToAgentTasks(user.uid, setTasks);
+    getAgentProfile(user.uid).then((p) => {
+      setApprovalStatus(p?.approvalStatus ?? 'approved');
+      setProfileLoading(false);
+    });
   }, [user]);
+
+  useEffect(() => {
+    if (!user || approvalStatus !== 'approved') return;
+    return subscribeToAgentTasks(user.uid, setTasks);
+  }, [user, approvalStatus]);
+
+  const handleLogout = async () => {
+    setRole(null);
+    await signOut(auth);
+    navigate('/login');
+  };
+
+  if (profileLoading) return (
+    <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Chargement...</div>
+  );
+
+  if (approvalStatus === 'pending') return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+      <div className="bg-white rounded-2xl p-10 max-w-md w-full text-center shadow-sm border border-gray-100">
+        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Clock size={32} className="text-amber-500" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Compte en attente d'approbation</h2>
+        <p className="text-gray-500 text-sm mb-6">
+          Votre compte est en cours de validation par l'administrateur. Vous serez notifié une fois approuvé.
+        </p>
+        <button onClick={handleLogout}
+          className="flex items-center justify-center gap-2 mx-auto text-sm text-gray-400 hover:text-gray-600 transition-colors">
+          <LogOut size={15} /> Se déconnecter
+        </button>
+      </div>
+    </div>
+  );
+
+  if (approvalStatus === 'refused') return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+      <div className="bg-white rounded-2xl p-10 max-w-md w-full text-center shadow-sm border border-gray-100">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <AlertCircle size={32} className="text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Accès refusé</h2>
+        <p className="text-gray-500 text-sm mb-6">
+          Votre demande d'accès a été refusée. Contactez l'administrateur pour plus d'informations.
+        </p>
+        <button onClick={handleLogout}
+          className="flex items-center justify-center gap-2 mx-auto text-sm text-gray-400 hover:text-gray-600 transition-colors">
+          <LogOut size={15} /> Se déconnecter
+        </button>
+      </div>
+    </div>
+  );
 
   const total     = tasks.length;
   const completed = tasks.filter((t) => t.status === 'completed').length;
