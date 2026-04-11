@@ -110,7 +110,7 @@ export default function SettingsPage() {
       {/* Footer */}
       <div className="text-center">
         <p className="text-xs text-gray-400">© 2026 Suivi des Travaux Journaliers</p>
-        <p className="text-xs text-gray-300 mt-0.5">OCP Industriel — Tous droits réservés</p>
+        <p className="text-xs text-gray-300 mt-0.5">OCP Groupe — Tous droits réservés</p>
       </div>
     </div>
   );

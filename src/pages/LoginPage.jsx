@@ -68,7 +68,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <img src="/ocp-logo.svg" alt="OCP" className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-xl" />
-          <h1 className="text-white text-2xl font-extrabold">OCP Industriel</h1>
+          <h1 className="text-white text-2xl font-extrabold">OCP Groupe</h1>
           <p className="text-green-200 text-sm mt-1">Suivi des Travaux Journaliers</p>
         </div>
 

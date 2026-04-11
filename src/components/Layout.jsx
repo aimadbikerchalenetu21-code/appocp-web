@@ -64,7 +64,7 @@ export default function Layout() {
         <div className="flex items-center gap-3">
           <OcpLogo size={40} />
           <div>
-            <p className="text-white font-bold text-sm leading-none">OCP Industriel</p>
+            <p className="text-white font-bold text-sm leading-none">OCP Groupe</p>
             <p className="text-green-200 text-xs mt-0.5">Suivi des Travaux</p>
           </div>
         </div>
