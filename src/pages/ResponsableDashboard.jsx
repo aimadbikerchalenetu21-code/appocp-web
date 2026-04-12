@@ -130,20 +130,20 @@ export default function ResponsableDashboard() {
                         En retard
                       </span>
                     </div>
-                    <div className="flex">
-                      {!isInProgress && (
-                        <button onClick={() => handleStart(task)}
-                          className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-extrabold text-white"
-                          style={{ background: 'linear-gradient(135deg, #15803d, #166534)' }}>
-                          <Play size={15} fill="white" /> DÉMARRER
-                        </button>
-                      )}
+                    {!isInProgress && (
+                      <button onClick={() => handleStart(task)}
+                        className="w-full flex items-center justify-center gap-2 py-4 text-sm font-extrabold text-white"
+                        style={{ background: 'linear-gradient(135deg, #15803d, #166534)' }}>
+                        <Play size={15} fill="white" /> DÉMARRER
+                      </button>
+                    )}
+                    {isInProgress && (
                       <button onClick={() => handleFin(task)}
-                        className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-extrabold text-white"
+                        className="w-full flex items-center justify-center gap-2 py-4 text-sm font-extrabold text-white"
                         style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>
                         <StopCircle size={15} /> FIN
                       </button>
-                    </div>
+                    )}
                   </div>
                 );
               })}
