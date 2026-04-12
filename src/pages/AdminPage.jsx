@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { subscribeToAllAgents, updateAgentApproval, deleteAllTasks } from '../services/firestoreService';
-import { Users, Clock, CheckCircle, XCircle, LogOut, ShieldCheck, Check, X, UserMinus, UserPlus, Trash2 } from 'lucide-react';
+import { subscribeToAllAgents, updateAgentApproval } from '../services/firestoreService';
+import { Users, Clock, CheckCircle, XCircle, LogOut, ShieldCheck, Check, X, UserMinus, UserPlus } from 'lucide-react';
 
 const STATUS_CONFIG = {
   approved: { label: 'Approuvé',  color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200', dot: 'bg-green-500' },
@@ -79,20 +79,6 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-4">
-
-        {/* Danger zone */}
-        <div className="mb-5 flex justify-end">
-          <button
-            onClick={async () => {
-              if (window.confirm('Supprimer TOUTES les tâches définitivement ? Cette action est irréversible.')) {
-                await deleteAllTasks();
-                alert('Toutes les tâches ont été supprimées.');
-              }
-            }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition-colors">
-            <Trash2 size={15} /> Vider toutes les tâches
-          </button>
-        </div>
 
         {/* Stats cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
