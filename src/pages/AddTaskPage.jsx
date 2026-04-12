@@ -91,7 +91,8 @@ export default function AddTaskPage() {
   const selectedTasks = namedTasks.filter(t => t.selected);
   const assignedTasks = namedTasks.filter(t => t.assignedEmail);
   const unassignedTasks = namedTasks.filter(t => !t.assignedEmail);
-  const allSelected   = namedTasks.length > 0 && namedTasks.every(t => t.selected);
+  const unassignableTasks = namedTasks.filter(t => !t.assignedEmail);
+  const allSelected   = unassignableTasks.length > 0 && unassignableTasks.every(t => t.selected);
 
   const filteredTasks = namedTasks.filter(t =>
     !search || t.title.toLowerCase().includes(search.toLowerCase())
@@ -100,10 +101,14 @@ export default function AddTaskPage() {
   const countFor = (email) => assignedTasks.filter(t => t.assignedEmail === email).length;
 
   /* ── Task helpers ─────────────────────────────────────────────────── */
-  const toggleTask = (id) => setTasks(p => p.map(t => t.id===id ? {...t, selected:!t.selected} : t));
+  const toggleTask = (id) => setTasks(p => p.map(t =>
+    t.id===id && !t.assignedEmail ? {...t, selected:!t.selected} : t
+  ));
   const toggleAll  = ()   => {
-    const will = !allSelected;
-    setTasks(p => p.map(t => t.title.trim() ? {...t, selected:will} : t));
+    // only toggle unassigned tasks
+    const unassigned = namedTasks.filter(t => !t.assignedEmail);
+    const will = !unassigned.every(t => t.selected);
+    setTasks(p => p.map(t => t.title.trim() && !t.assignedEmail ? {...t, selected:will} : t));
   };
   const unassign = (id) => setTasks(p => p.map(t => t.id===id ? {...t, assignedEmail:null, selected:false} : t));
 
@@ -444,8 +449,11 @@ export default function AddTaskPage() {
                       className={`flex items-center gap-2.5 px-4 py-2.5 transition-colors ${
                         task.selected ? 'bg-green-50' : 'hover:bg-gray-50'
                       }`}>
-                      {/* Checkbox */}
-                      <button onClick={() => toggleTask(task.id)} className="flex-shrink-0">
+                      {/* Checkbox — disabled once assigned */}
+                      <button
+                        onClick={() => toggleTask(task.id)}
+                        disabled={!!task.assignedEmail}
+                        className={`flex-shrink-0 ${task.assignedEmail ? 'cursor-default opacity-30' : ''}`}>
                         {task.selected
                           ? <CheckSquare size={17} className="text-green-600"/>
                           : <Square size={17} className="text-gray-300"/>}
