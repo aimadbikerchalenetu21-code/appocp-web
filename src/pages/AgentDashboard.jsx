@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { subscribeToAllTasks, getAgentProfile, deleteTask } from '../services/firestoreService';
+import { subscribeToAllTasks, getAgentProfile, deleteTask, validateTask } from '../services/firestoreService';
 import {
   CheckCircle, AlertCircle, Clock, Plus, ClipboardList, Flag,
   Bell, CalendarDays, History, User, LogOut, Timer,
-  ChevronLeft, ChevronRight, Trash2,
+  ChevronLeft, ChevronRight, Trash2, ShieldCheck,
 } from 'lucide-react';
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
@@ -172,13 +172,15 @@ export default function AgentDashboard() {
   const upcomingCount = allTasks.filter((t) => t.dueDate  >  today).length;
   const historyCount  = allTasks.filter((t) => t.dueDate  <  today).length;
 
-  const total          = tasks.length;
-  const completed      = tasks.filter((t) => t.status === 'completed').length;
-  const inProgress     = tasks.filter((t) => t.status === 'in-progress').length;
-  const blocked        = tasks.filter((t) => t.status === 'blocked').length;
-  const pending        = tasks.filter((t) => t.status === 'pending').length;
-  const pct            = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const totalTempsMin  = tasks.reduce((sum, t) => sum + (t.tempsTotal || 0), 0);
+  const total            = tasks.length;
+  const completed        = tasks.filter((t) => t.status === 'completed' && t.ocpValidated).length;
+  const inProgress       = tasks.filter((t) => t.status === 'in-progress').length;
+  const blocked          = tasks.filter((t) => t.status === 'blocked').length;
+  const pending          = tasks.filter((t) => t.status === 'pending').length;
+  const awaitingValidation = tasks.filter((t) => ['completed','blocked'].includes(t.status) && !t.ocpValidated).length;
+  const pct              = total > 0 ? Math.round((completed / total) * 100) : 0;
+  // Only count time for OCP-validated tasks
+  const totalTempsMin    = tasks.filter((t) => t.ocpValidated).reduce((sum, t) => sum + (t.tempsTotal || 0), 0);
   const fmtMin = (m) => {
     if (!m) return '—';
     const h = Math.floor(m / 60), mn = m % 60;
@@ -199,12 +201,12 @@ export default function AgentDashboard() {
   const selDone   = selTasks.filter((t) => t.status === 'completed').length;
   const selPct    = selTotal > 0 ? Math.round((selDone / selTotal) * 100) : 0;
 
-  // By collaborateur (today only)
+  // By collaborateur (today only) — only validated completions count
   const byCollab = (tasksByDate[today] || []).reduce((acc, t) => {
     const email = t.assignedTo?.email || t.createdBy?.email || 'Inconnu';
     if (!acc[email]) acc[email] = { total: 0, done: 0 };
     acc[email].total++;
-    if (t.status === 'completed') acc[email].done++;
+    if (t.status === 'completed' && t.ocpValidated) acc[email].done++;
     return acc;
   }, {});
 
@@ -527,6 +529,19 @@ export default function AgentDashboard() {
               </div>
             )}
 
+            {/* À valider banner */}
+            {awaitingValidation > 0 && (
+              <div className="mx-4 mb-3 flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3">
+                <ShieldCheck size={18} className="text-orange-500 flex-shrink-0" />
+                <p className="text-sm font-semibold text-orange-800 flex-1">
+                  {awaitingValidation} tâche{awaitingValidation > 1 ? 's' : ''} en attente de votre validation
+                </p>
+                <span className="text-xs font-extrabold text-white bg-orange-500 px-2.5 py-1 rounded-full flex-shrink-0">
+                  {awaitingValidation}
+                </span>
+              </div>
+            )}
+
             {/* Task list */}
             <div className="mx-4">
               <div className="flex items-center justify-between mb-3">
@@ -547,43 +562,69 @@ export default function AgentDashboard() {
                   {tasks.map((task) => {
                     const sc = STATUS_STYLES[task.status] || STATUS_STYLES.pending;
                     const canDelete = task.createdBy?.uid === user?.uid;
+                    const needsValidation = ['completed', 'blocked'].includes(task.status) && !task.ocpValidated;
+                    const isValidated     = ['completed', 'blocked'].includes(task.status) && task.ocpValidated;
                     return (
                       <div key={task.id}
-                        onClick={() => navigate('/task/' + task.id, { state: { task } })}
-                        className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${sc.border} cursor-pointer hover:shadow-md transition-all flex items-center gap-3`}>
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${sc.bg}`}>
-                          <ClipboardList size={16} className={sc.color} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 text-sm truncate">{task.title}</p>
-                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                            <span className="flex items-center gap-1 text-xs text-gray-400"><Flag size={10} /> {task.priority || 'Moyen'}</span>
-                            {task.assignedTo?.email && (
-                              <span className="flex items-center gap-1 text-xs text-gray-400 truncate"><User size={10} /> {task.assignedTo.email}</span>
-                            )}
-                            {task.dueDate && <span className="text-xs text-gray-300">{task.dueDate}</span>}
+                        className={`bg-white rounded-xl shadow-sm border-l-4 overflow-hidden transition-all ${
+                          needsValidation ? 'border-orange-400' : sc.border
+                        }`}>
+                        {/* Main row */}
+                        <div className="p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50"
+                          onClick={() => navigate('/task/' + task.id, { state: { task } })}>
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${needsValidation ? 'bg-orange-50' : sc.bg}`}>
+                            {needsValidation
+                              ? <ShieldCheck size={16} className="text-orange-500" />
+                              : <ClipboardList size={16} className={sc.color} />}
                           </div>
-                          {(task.startedAt || task.completedAt || task.blockedAt) && (
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
-                              {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
-                              {fmtHour(task.blockedAt) && <span className="text-xs text-amber-600 font-semibold">⚠ {fmtHour(task.blockedAt)}</span>}
-                              {fmtDuration(task.startedAt, task.completedAt) && (
-                                <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-800 text-sm truncate">{task.title}</p>
+                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                              <span className="flex items-center gap-1 text-xs text-gray-400"><Flag size={10} /> {task.priority || 'Moyen'}</span>
+                              {task.assignedTo?.email && (
+                                <span className="flex items-center gap-1 text-xs text-gray-400 truncate"><User size={10} /> {task.assignedTo.email}</span>
                               )}
-                              {!fmtHour(task.completedAt) && fmtDuration(task.startedAt, task.blockedAt) && (
-                                <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.blockedAt)}</span>
-                              )}
+                              {task.dueDate && <span className="text-xs text-gray-300">{task.dueDate}</span>}
                             </div>
+                            {(task.startedAt || task.completedAt || task.blockedAt) && (
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
+                                {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
+                                {fmtHour(task.blockedAt) && <span className="text-xs text-amber-600 font-semibold">⚠ {fmtHour(task.blockedAt)}</span>}
+                                {fmtDuration(task.startedAt, task.completedAt) && (
+                                  <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
+                                )}
+                                {!fmtHour(task.completedAt) && fmtDuration(task.startedAt, task.blockedAt) && (
+                                  <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.blockedAt)}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {/* Status badge */}
+                          {needsValidation ? (
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 bg-orange-100 text-orange-700">
+                              À valider
+                            </span>
+                          ) : (
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
+                              {isValidated ? '✓ ' : ''}{sc.label}
+                            </span>
+                          )}
+                          {canDelete && (
+                            <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Supprimer cette tâche ?')) deleteTask(task.id); }}
+                              className="p-1.5 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0">
+                              <Trash2 size={15} />
+                            </button>
                           )}
                         </div>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
-                          {sc.label}
-                        </span>
-                        {canDelete && (
-                          <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Supprimer cette tâche ?')) deleteTask(task.id); }}
-                            className="p-1.5 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0">
-                            <Trash2 size={15} />
+
+                        {/* Validate button strip */}
+                        {needsValidation && (
+                          <button
+                            onClick={() => validateTask(task.id)}
+                            className="w-full flex items-center justify-center gap-2 py-3 text-sm font-extrabold text-white transition-all hover:brightness-110"
+                            style={{ background: 'linear-gradient(135deg, #ea580c, #c2410c)' }}>
+                            <ShieldCheck size={15} /> VALIDER LA TÂCHE
                           </button>
                         )}
                       </div>

@@ -123,6 +123,13 @@ export const updateTaskTime = async (taskId, tempsParPersonne, nbParticipants) =
   await updateDoc(doc(db, 'tasks', taskId), { tempsParPersonne, nbParticipants, tempsTotal });
 };
 
+export const validateTask = async (taskId) => {
+  await updateDoc(doc(db, 'tasks', taskId), {
+    ocpValidated: true,
+    validatedAt: serverTimestamp(),
+  });
+};
+
 export const addTaskOperator = async (taskId, operator) => {
   await updateDoc(doc(db, 'tasks', taskId), {
     operators: arrayUnion(operator),
