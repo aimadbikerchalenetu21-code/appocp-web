@@ -68,8 +68,13 @@ export default function AddTaskPage() {
   const [showSugg,     setShowSugg]     = useState(false);
 
   /* ui */
-  const [search,       setSearch]       = useState('');
-  const [manualInput,  setManualInput]  = useState('');
+  const [search,         setSearch]         = useState('');
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualForm,   setManualForm]   = useState({
+    title:'', ordre:'', avis:'', type:'', objTechnique:'',
+    priority:'Moyen', date:'', dateFin:'',
+    statutSys:'', descPosTrav:'', planEntretien:'', statutUtilis:'',
+  });
   const [loading,      setLoading]      = useState(false);
   const [success,      setSuccess]      = useState(null);
   const [globalErr,    setGlobalErr]    = useState('');
@@ -114,11 +119,29 @@ export default function AddTaskPage() {
   const unassign = (id) => setTasks(p => p.map(t => t.id===id ? {...t, assignedEmail:null, selected:false} : t));
 
   const addManualTask = () => {
-    const title = manualInput.trim();
-    if (!title) return;
-    setTasks(p => [...p, makeTask({ title, selected: false })]);
-    setManualInput('');
+    if (!manualForm.title.trim()) return;
+    setTasks(p => [...p, makeTask({
+      title:         manualForm.title.trim(),
+      ordre:         manualForm.ordre.trim(),
+      avis:          manualForm.avis.trim(),
+      type:          manualForm.type.trim(),
+      objTechnique:  manualForm.objTechnique.trim(),
+      priority:      manualForm.priority || 'Moyen',
+      date:          manualForm.date || null,
+      dateFin:       manualForm.dateFin || null,
+      statutSys:     manualForm.statutSys.trim(),
+      descPosTrav:   manualForm.descPosTrav.trim(),
+      planEntretien: manualForm.planEntretien.trim(),
+      statutUtilis:  manualForm.statutUtilis.trim(),
+      selected: false,
+    })]);
+    setManualForm({ title:'', ordre:'', avis:'', type:'', objTechnique:'',
+      priority:'Moyen', date:'', dateFin:'',
+      statutSys:'', descPosTrav:'', planEntretien:'', statutUtilis:'',
+    });
+    setShowManualForm(false);
   };
+  const setMF = (k, v) => setManualForm(p => ({...p, [k]: v}));
   const removeTask = (id) => setTasks(p => p.filter(t => t.id !== id));
 
   /* ── Excel import ─────────────────────────────────────────────────── */
@@ -417,23 +440,154 @@ export default function AddTaskPage() {
 
         {/* ── Manual task add ────────────────────────────────────── */}
         <div className="px-4 pt-4">
-          <div className="flex items-center gap-2 bg-white rounded-2xl border border-dashed border-gray-200 px-4 py-2.5 focus-within:border-green-400 transition-colors shadow-sm">
-            <Plus size={15} className="text-gray-300 flex-shrink-0"/>
-            <input
-              value={manualInput}
-              onChange={e => setManualInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addManualTask(); } }}
-              placeholder="Ajouter une tâche manuellement... (Entrée pour confirmer)"
-              className="flex-1 text-sm text-gray-600 outline-none bg-transparent placeholder-gray-300"
-            />
-            {manualInput.trim() && (
-              <button onClick={addManualTask}
-                className="flex-shrink-0 text-xs font-bold text-white px-3 py-1 rounded-lg"
-                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
-                Ajouter
-              </button>
-            )}
-          </div>
+          {!showManualForm ? (
+            <button onClick={() => setShowManualForm(true)}
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-2xl py-3 text-sm font-semibold text-gray-400 hover:border-green-400 hover:text-green-600 transition-colors bg-white">
+              <Plus size={15}/> Ajouter une tâche manuellement
+            </button>
+          ) : (
+            <div className="bg-white rounded-2xl border border-green-200 shadow-sm overflow-hidden">
+              {/* Form header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50"
+                style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)' }}>
+                <p className="text-sm font-bold text-green-800">Nouvelle tâche SAP</p>
+                <button onClick={() => setShowManualForm(false)}
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={15}/>
+                </button>
+              </div>
+
+              <div className="px-4 py-4 space-y-3">
+                {/* Désignation */}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">Désignation *</label>
+                  <input value={manualForm.title}
+                    onChange={e => setMF('title', e.target.value)}
+                    placeholder="Ex: GRAISSAGE SYSTEMATIQUE HA026B"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors" />
+                </div>
+
+                {/* Ordre / Avis / Type */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">Ordre</label>
+                    <input value={manualForm.ordre}
+                      onChange={e => setMF('ordre', e.target.value)}
+                      placeholder="4001428474"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors font-mono" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">Avis</label>
+                    <input value={manualForm.avis}
+                      onChange={e => setMF('avis', e.target.value)}
+                      placeholder="12288029"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors font-mono" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">Type</label>
+                    <input value={manualForm.type}
+                      onChange={e => setMF('type', e.target.value)}
+                      placeholder="ZPRV"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors" />
+                  </div>
+                </div>
+
+                {/* Obj. technique */}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">Obj. technique</label>
+                  <input value={manualForm.objTechnique}
+                    onChange={e => setMF('objTechnique', e.target.value)}
+                    placeholder="SF02-FM-0MCP-C"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors" />
+                </div>
+
+                {/* Date début / Date fin */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">Date début</label>
+                    <input type="date" value={manualForm.date}
+                      onChange={e => setMF('date', e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">Date fin</label>
+                    <input type="date" value={manualForm.dateFin}
+                      onChange={e => setMF('dateFin', e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors" />
+                  </div>
+                </div>
+
+                {/* Statut système */}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">Statut système</label>
+                  <input value={manualForm.statutSys}
+                    onChange={e => setMF('statutSys', e.target.value)}
+                    placeholder="CRÉÉ CCRP DANF"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors" />
+                </div>
+
+                {/* Desc. pos.trav. */}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">Desc. pos.trav.</label>
+                  <textarea value={manualForm.descPosTrav}
+                    onChange={e => setMF('descPosTrav', e.target.value)}
+                    rows={2} placeholder="Section Mécanique ATPL"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors resize-none" />
+                </div>
+
+                {/* Statut utilis / Plan entretien */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">Statut utilis.</label>
+                    <input value={manualForm.statutUtilis}
+                      onChange={e => setMF('statutUtilis', e.target.value)}
+                      placeholder="Ex: MANQ"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">Plan entretien</label>
+                    <input value={manualForm.planEntretien}
+                      onChange={e => setMF('planEntretien', e.target.value)}
+                      placeholder="200000002445"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors font-mono" />
+                  </div>
+                </div>
+
+                {/* Désign.priorité */}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">Désign.priorité</label>
+                  <div className="flex gap-2">
+                    {['Faible','Moyen','Élevé','Critique'].map(p => (
+                      <button key={p} onClick={() => setMF('priority', p)}
+                        className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                          manualForm.priority === p
+                            ? p==='Faible'   ? 'bg-green-100 text-green-700 border-green-400'
+                            : p==='Moyen'    ? 'bg-blue-100 text-blue-700 border-blue-400'
+                            : p==='Élevé'   ? 'bg-orange-100 text-orange-700 border-orange-400'
+                            : 'bg-red-100 text-red-700 border-red-400'
+                            : 'bg-gray-50 text-gray-400 border-gray-200'
+                        }`}>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-1">
+                  <button onClick={addManualTask} disabled={!manualForm.title.trim()}
+                    className="flex-1 py-2.5 text-sm font-bold text-white rounded-xl disabled:opacity-40 transition-all"
+                    style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+                    <Plus size={14} className="inline mr-1"/> Ajouter la tâche
+                  </button>
+                  <button onClick={() => setShowManualForm(false)}
+                    className="px-4 py-2.5 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Task list ──────────────────────────────────────────── */}
