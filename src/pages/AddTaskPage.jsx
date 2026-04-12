@@ -502,10 +502,18 @@ export default function AddTaskPage() {
                           : <Square size={17} className="text-gray-300"/>}
                       </button>
 
-                      {/* Title */}
-                      <p className="flex-1 text-sm font-semibold text-gray-800 truncate min-w-0">
-                        {task.title}
-                      </p>
+                      {/* Title + SAP info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{task.title}</p>
+                        {(task.ordre || task.avis || task.type || task.objTechnique) && (
+                          <p className="text-xs text-gray-400 truncate mt-0.5 flex items-center gap-1.5">
+                            {task.ordre      && <span className="font-mono">{task.ordre}</span>}
+                            {task.avis       && <><span className="text-gray-200">·</span><span className="font-mono">{task.avis}</span></>}
+                            {task.type       && <><span className="text-gray-200">·</span><span className="text-blue-400 font-semibold">{task.type}</span></>}
+                            {task.objTechnique && <><span className="text-gray-200">·</span><span className="text-green-600">{task.objTechnique}</span></>}
+                          </p>
+                        )}
+                      </div>
 
                       {/* Date badge */}
                       {task.date && (
