@@ -484,18 +484,18 @@ export default function AgentDashboard() {
             </div>
 
             {/* KPI cards */}
-            <div className="mx-4 grid grid-cols-4 gap-2 mb-4">
+            <div className="mx-4 grid grid-cols-4 gap-1.5 mb-4">
               {[
-                { label: 'OK',         value: completed,  icon: CheckCircle, bg: '#dcfce7', ic: '#16a34a', nc: '#15803d' },
-                { label: 'En cours',   value: inProgress, icon: Timer,       bg: '#e0e7ff', ic: '#6366f1', nc: '#4338ca' },
-                { label: 'Bloqué',     value: blocked,    icon: AlertCircle, bg: '#fef3c7', ic: '#d97706', nc: '#b45309' },
-                { label: 'En attente', value: pending,    icon: Clock,       bg: '#f0fdf4', ic: '#6b7280', nc: '#374151' },
+                { label: 'OK',       value: completed,  icon: CheckCircle, bg: '#dcfce7', ic: '#16a34a', nc: '#15803d' },
+                { label: 'En cours', value: inProgress, icon: Timer,       bg: '#e0e7ff', ic: '#6366f1', nc: '#4338ca' },
+                { label: 'Bloqué',   value: blocked,    icon: AlertCircle, bg: '#fef3c7', ic: '#d97706', nc: '#b45309' },
+                { label: 'Attente',  value: pending,    icon: Clock,       bg: '#f0fdf4', ic: '#6b7280', nc: '#374151' },
               ].map(({ label, value, icon: Icon, bg, ic, nc }) => (
-                <div key={label} className="rounded-2xl p-3 flex flex-col items-center gap-1 shadow-sm"
+                <div key={label} className="rounded-xl p-2 flex flex-col items-center gap-0.5 shadow-sm"
                   style={{ backgroundColor: bg }}>
-                  <Icon size={18} style={{ color: ic }} />
-                  <span className="text-xl font-extrabold" style={{ color: nc }}>{String(value).padStart(2, '0')}</span>
-                  <span className="text-xs font-semibold text-center leading-tight" style={{ color: nc, opacity: .75 }}>{label}</span>
+                  <Icon size={15} style={{ color: ic }} />
+                  <span className="text-lg font-extrabold" style={{ color: nc }}>{String(value).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-semibold text-center leading-tight" style={{ color: nc, opacity: .75 }}>{label}</span>
                 </div>
               ))}
             </div>

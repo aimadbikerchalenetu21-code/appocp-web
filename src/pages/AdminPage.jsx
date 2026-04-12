@@ -61,9 +61,9 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen" style={{ background: '#0f172a' }}>
       {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-white/10">
+      <header className="px-4 py-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
             <ShieldCheck size={18} className="text-white" />
           </div>
@@ -73,12 +73,12 @@ export default function AdminPage() {
           </div>
         </div>
         <button onClick={handleLogout}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm">
-          <LogOut size={16} /> Se déconnecter
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm flex-shrink-0 ml-2">
+          <LogOut size={16} /> <span className="hidden sm:inline">Se déconnecter</span>
         </button>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-4">
 
         {/* Danger zone */}
         <div className="mb-5 flex justify-end">
@@ -95,7 +95,7 @@ export default function AdminPage() {
         </div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {FILTERS.map(({ key, label, icon: Icon, color }) => (
             <button key={key} onClick={() => setFilter(key)}
               className={`rounded-xl p-4 text-left transition-all border ${
@@ -142,27 +142,29 @@ export default function AdminPage() {
 
               return (
                 <div key={agent.id}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-                  {/* Avatar */}
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
-                    {getInitials(agent.name, agent.email)}
-                  </div>
+                  className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
+                      {getInitials(agent.name, agent.email)}
+                    </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm truncate">
-                      {agent.name || agent.email?.split('@')[0]}
-                    </p>
-                    <p className="text-gray-400 text-xs truncate">{agent.email}</p>
-                    <span className={`inline-flex items-center gap-1 mt-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${sc.color} ${sc.bg} ${sc.border}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                      {sc.label}
-                    </span>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold text-sm truncate">
+                        {agent.name || agent.email?.split('@')[0]}
+                      </p>
+                      <p className="text-gray-400 text-xs truncate">{agent.email}</p>
+                      <span className={`inline-flex items-center gap-1 mt-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${sc.color} ${sc.bg} ${sc.border}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                        {sc.label}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 flex-wrap">
                     {approvalStatus === 'pending' && (
                       <>
                         <button onClick={() => handleApproval(agent.uid, 'approved')} disabled={busy}

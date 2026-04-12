@@ -75,7 +75,7 @@ export default function RegisterPage() {
           <p className="text-green-200 text-sm mt-1">Créer votre compte OCP</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8">
           <h2 className="text-xl font-bold text-gray-800 mb-1">Nouveau compte</h2>
           <p className="text-gray-400 text-xs mb-6">Rôle : Collaborateur OCP</p>
 

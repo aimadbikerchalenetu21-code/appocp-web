@@ -465,7 +465,7 @@ export default function TaskDetailPage() {
 
       {/* ── Bottom action area (responsable only) ─────────────────────── */}
       {role === 'responsable' && (
-        <div className="flex-shrink-0 bg-white border-t border-gray-100">
+        <div className="flex-shrink-0 bg-white border-t border-gray-100" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {isFinal ? (
             <div className={`flex items-center justify-center gap-3 py-5 ${status === 'completed' ? 'bg-green-50' : 'bg-amber-50'}`}>
               {status === 'completed'

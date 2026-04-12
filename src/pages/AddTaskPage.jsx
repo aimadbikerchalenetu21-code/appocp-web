@@ -468,7 +468,7 @@ export default function AddTaskPage() {
                 </div>
 
                 {/* Ordre / Avis / Type */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5">
                   <div>
                     <label className="text-xs font-bold text-gray-500 mb-1 block">Ordre</label>
                     <input value={manualForm.ordre}
@@ -556,10 +556,10 @@ export default function AddTaskPage() {
                 {/* Désign.priorité */}
                 <div>
                   <label className="text-xs font-bold text-gray-500 mb-1 block">Désign.priorité</label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {['Faible','Moyen','Élevé','Critique'].map(p => (
                       <button key={p} onClick={() => setMF('priority', p)}
-                        className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                        className={`py-1.5 rounded-xl text-xs font-bold border transition-all ${
                           manualForm.priority === p
                             ? p==='Faible'   ? 'bg-green-100 text-green-700 border-green-400'
                             : p==='Moyen'    ? 'bg-blue-100 text-blue-700 border-blue-400'
@@ -754,11 +754,11 @@ export default function AddTaskPage() {
               className="w-full flex items-center justify-center gap-2 text-white rounded-2xl py-4 text-sm font-extrabold shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, #1c3b72, #0f2347)' }}>
               <Send size={16}/>
-              {loading ? 'Création en cours...' : `Créer ${assignedTasks.length} tâche${assignedTasks.length>1?'s':''} pour ${invList.filter(i=>assignedTasks.some(t=>t.assignedEmail===i.email)).length} intervenant${invList.length>1?'s':''}`}
+              {loading ? 'Création...' : `Créer ${assignedTasks.length} tâche${assignedTasks.length>1?'s':''}`}
             </button>
           ) : (
             <div className="flex items-center justify-between py-1">
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-400 truncate flex-1 mr-2">
                 {assignedTasks.length > 0
                   ? `${assignedTasks.length} assignée${assignedTasks.length>1?'s':''} · ${unassignedTasks.length} restante${unassignedTasks.length>1?'s':''}`
                   : 'Sélectionnez des tâches puis assignez-les'}

@@ -72,7 +72,7 @@ export default function LoginPage() {
           <p className="text-green-200 text-sm mt-1">Suivi des Travaux Journaliers</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8">
           <h2 className="text-xl font-bold text-gray-800 mb-1">Connexion</h2>
           <p className="text-gray-500 text-sm mb-6">Accédez à votre espace de travail</p>
 
@@ -120,7 +120,7 @@ export default function LoginPage() {
                   }`}>
                     <Icon size={18} className="text-white" />
                   </div>
-                  <span className={`text-xs font-bold leading-tight ${
+                  <span className={`text-[11px] font-bold leading-tight text-center ${
                     selectedRole === key
                       ? key === 'admin' ? 'text-blue-700' : 'text-green-700'
                       : 'text-gray-500'
