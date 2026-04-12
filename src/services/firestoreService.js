@@ -6,7 +6,12 @@ import { db } from '../config/firebase';
 
 const FIREBASE_API_KEY = 'AIzaSyBqptWexrHqhfgo0o0QdF0Qns1ev35IrBM';
 
-export const ADMIN_EMAILS = ['Amine.ZIRAR@ocpgroup.ma'];
+export const ADMIN_EMAILS = ['medaminezirar20@gmail.com'];
+
+export const getResponsableProfile = async (uid) => {
+  const snap = await getDoc(doc(db, 'responsables', uid));
+  return snap.exists() ? snap.data() : null;
+};
 
 export const checkResponsableExists = async (email) => {
   const snap = await getDocs(query(collection(db, 'responsables'), where('email', '==', email)));
