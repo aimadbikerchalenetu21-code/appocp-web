@@ -69,6 +69,7 @@ export default function AddTaskPage() {
 
   /* ui */
   const [search,       setSearch]       = useState('');
+  const [manualInput,  setManualInput]  = useState('');
   const [loading,      setLoading]      = useState(false);
   const [success,      setSuccess]      = useState(null);
   const [globalErr,    setGlobalErr]    = useState('');
@@ -111,6 +112,14 @@ export default function AddTaskPage() {
     setTasks(p => p.map(t => t.title.trim() && !t.assignedEmail ? {...t, selected:will} : t));
   };
   const unassign = (id) => setTasks(p => p.map(t => t.id===id ? {...t, assignedEmail:null, selected:false} : t));
+
+  const addManualTask = () => {
+    const title = manualInput.trim();
+    if (!title) return;
+    setTasks(p => [...p, makeTask({ title, selected: false })]);
+    setManualInput('');
+  };
+  const removeTask = (id) => setTasks(p => p.filter(t => t.id !== id));
 
   /* ── Excel import ─────────────────────────────────────────────────── */
   const handleTasksExtracted = (imported) => {
@@ -406,9 +415,30 @@ export default function AddTaskPage() {
           </div>
         </div>
 
+        {/* ── Manual task add ────────────────────────────────────── */}
+        <div className="px-4 pt-4">
+          <div className="flex items-center gap-2 bg-white rounded-2xl border border-dashed border-gray-200 px-4 py-2.5 focus-within:border-green-400 transition-colors shadow-sm">
+            <Plus size={15} className="text-gray-300 flex-shrink-0"/>
+            <input
+              value={manualInput}
+              onChange={e => setManualInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addManualTask(); } }}
+              placeholder="Ajouter une tâche manuellement... (Entrée pour confirmer)"
+              className="flex-1 text-sm text-gray-600 outline-none bg-transparent placeholder-gray-300"
+            />
+            {manualInput.trim() && (
+              <button onClick={addManualTask}
+                className="flex-shrink-0 text-xs font-bold text-white px-3 py-1 rounded-lg"
+                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+                Ajouter
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* ── Task list ──────────────────────────────────────────── */}
         {namedTasks.length > 0 && (
-          <div className="px-4 pt-4">
+          <div className="px-4 pt-3">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
               {/* Toolbar */}
@@ -481,7 +511,13 @@ export default function AddTaskPage() {
                           </button>
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-200 flex-shrink-0"/>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-200"/>
+                          <button onClick={() => removeTask(task.id)}
+                            className="p-0.5 rounded-full text-gray-200 hover:text-red-400 transition-colors">
+                            <X size={11}/>
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
