@@ -280,89 +280,104 @@ export default function TaskDetailPage() {
         </div>
 
         {/* ── Temps de réalisation ──────────────────────────────────── */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-base">⏱</span>
-            <h2 className="font-bold text-gray-700 text-sm">Temps de réalisation</h2>
+        <div className="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-indigo-50"
+            style={{ background: 'linear-gradient(135deg, #eef2ff, #f5f3ff)' }}>
+            <span className="text-lg">⏱</span>
+            <h2 className="font-bold text-indigo-800 text-sm flex-1">Temps de réalisation</h2>
             {task.tempsTotal > 0 && (
-              <span className="ml-auto text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
                 Total : {fmtMin(task.tempsTotal)}
               </span>
             )}
           </div>
 
-          {/* Existing saved value */}
-          {task.tempsTotal > 0 && (
-            <div className="flex gap-3 mb-3 text-center">
-              <div className="flex-1 bg-blue-50 rounded-xl py-2">
-                <p className="text-lg font-extrabold text-blue-700">{fmtMin(task.tempsParPersonne)}</p>
-                <p className="text-xs text-blue-400">par personne</p>
+          <div className="p-4 space-y-4">
+            {/* Already saved — show summary */}
+            {task.tempsTotal > 0 && (
+              <div className="flex gap-3 text-center">
+                <div className="flex-1 bg-blue-50 rounded-xl py-2.5">
+                  <p className="text-lg font-extrabold text-blue-700">{fmtMin(task.tempsParPersonne)}</p>
+                  <p className="text-xs text-blue-400 mt-0.5">par personne</p>
+                </div>
+                <div className="flex-1 bg-purple-50 rounded-xl py-2.5">
+                  <p className="text-lg font-extrabold text-purple-700">{task.nbParticipants}</p>
+                  <p className="text-xs text-purple-400 mt-0.5">participant{task.nbParticipants > 1 ? 's' : ''}</p>
+                </div>
+                <div className="flex-1 bg-indigo-50 rounded-xl py-2.5">
+                  <p className="text-lg font-extrabold text-indigo-700">{fmtMin(task.tempsTotal)}</p>
+                  <p className="text-xs text-indigo-400 mt-0.5">total</p>
+                </div>
               </div>
-              <div className="flex-1 bg-purple-50 rounded-xl py-2">
-                <p className="text-lg font-extrabold text-purple-700">{task.nbParticipants}</p>
-                <p className="text-xs text-purple-400">participant{task.nbParticipants > 1 ? 's' : ''}</p>
-              </div>
-              <div className="flex-1 bg-indigo-50 rounded-xl py-2">
-                <p className="text-lg font-extrabold text-indigo-700">{fmtMin(task.tempsTotal)}</p>
-                <p className="text-xs text-indigo-400">total</p>
+            )}
+
+            {/* ── HH : MM input ── */}
+            <div>
+              <p className="text-xs font-bold text-gray-500 mb-2">Durée par personne</p>
+              <div className="flex items-center gap-3">
+                {/* Hours */}
+                <div className="flex-1 flex flex-col items-center bg-gray-50 border-2 border-indigo-100 rounded-2xl py-3 gap-1">
+                  <button onClick={() => setTempsH(h => h + 1)}
+                    className="text-indigo-400 hover:text-indigo-600 font-extrabold text-xl leading-none">▲</button>
+                  <input
+                    type="number" min="0" max="99" value={tempsH}
+                    onChange={e => setTempsH(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-14 text-center text-3xl font-extrabold text-gray-800 outline-none bg-transparent tabular-nums" />
+                  <button onClick={() => setTempsH(h => Math.max(0, h - 1))}
+                    className="text-indigo-400 hover:text-indigo-600 font-extrabold text-xl leading-none">▼</button>
+                  <span className="text-xs text-gray-400 font-semibold mt-1">heures</span>
+                </div>
+
+                <span className="text-3xl font-extrabold text-indigo-300">:</span>
+
+                {/* Minutes */}
+                <div className="flex-1 flex flex-col items-center bg-gray-50 border-2 border-indigo-100 rounded-2xl py-3 gap-1">
+                  <button onClick={() => setTempsM(m => m >= 55 ? 0 : m + 5)}
+                    className="text-indigo-400 hover:text-indigo-600 font-extrabold text-xl leading-none">▲</button>
+                  <input
+                    type="number" min="0" max="59" value={String(tempsM).padStart(2, '0')}
+                    onChange={e => setTempsM(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+                    className="w-14 text-center text-3xl font-extrabold text-gray-800 outline-none bg-transparent tabular-nums" />
+                  <button onClick={() => setTempsM(m => m < 5 ? 55 : m - 5)}
+                    className="text-indigo-400 hover:text-indigo-600 font-extrabold text-xl leading-none">▼</button>
+                  <span className="text-xs text-gray-400 font-semibold mt-1">minutes</span>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Input form — responsable only */}
-          {role === 'responsable' && (
-            <div className="space-y-3">
-              {/* Time per person */}
-              <div>
-                <p className="text-xs font-bold text-gray-500 mb-1.5">Durée par personne</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 flex-1">
-                    <input type="number" min="0" max="99" value={tempsH}
-                      onChange={e => setTempsH(Math.max(0, parseInt(e.target.value)||0))}
-                      className="w-12 text-center text-xl font-extrabold text-gray-800 outline-none bg-transparent" />
-                    <span className="text-sm text-gray-400 font-semibold">h</span>
-                  </div>
-                  <span className="text-xl font-bold text-gray-300">:</span>
-                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 flex-1">
-                    <input type="number" min="0" max="59" value={tempsM}
-                      onChange={e => setTempsM(Math.min(59, Math.max(0, parseInt(e.target.value)||0)))}
-                      className="w-12 text-center text-xl font-extrabold text-gray-800 outline-none bg-transparent" />
-                    <span className="text-sm text-gray-400 font-semibold">min</span>
-                  </div>
-                </div>
+            {/* Participants */}
+            <div>
+              <p className="text-xs font-bold text-gray-500 mb-2">Nombre de participants</p>
+              <div className="flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-3 border-2 border-indigo-100">
+                <button onClick={() => setNbPart(p => Math.max(1, p - 1))}
+                  className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-600 font-extrabold text-xl hover:bg-gray-100 transition-colors flex items-center justify-center shadow-sm">−</button>
+                <span className="flex-1 text-center text-3xl font-extrabold text-gray-800">{nbPart}</span>
+                <button onClick={() => setNbPart(p => p + 1)}
+                  className="w-10 h-10 rounded-xl text-white font-extrabold text-xl hover:brightness-110 transition-all flex items-center justify-center shadow-sm"
+                  style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>+</button>
               </div>
-
-              {/* Number of participants */}
-              <div>
-                <p className="text-xs font-bold text-gray-500 mb-1.5">Nombre de participants</p>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setNbPart(p => Math.max(1, p-1))}
-                    className="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 font-extrabold text-lg hover:bg-gray-200 transition-colors flex-shrink-0">−</button>
-                  <span className="flex-1 text-center text-2xl font-extrabold text-gray-800">{nbPart}</span>
-                  <button onClick={() => setNbPart(p => p+1)}
-                    className="w-9 h-9 rounded-xl text-white font-extrabold text-lg hover:brightness-110 transition-all flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>+</button>
-                </div>
-              </div>
-
-              {/* Total preview */}
-              {tempsParPersonneMin > 0 && (
-                <div className="bg-indigo-50 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                  <span className="text-xs text-indigo-600 font-semibold">
-                    {fmtMin(tempsParPersonneMin)} × {nbPart} participant{nbPart>1?'s':''}
-                  </span>
-                  <span className="text-sm font-extrabold text-indigo-700">= {fmtMin(tempsTotalMin)}</span>
-                </div>
-              )}
-
-              <button onClick={handleSaveTime}
-                disabled={savingTime || tempsParPersonneMin === 0}
-                className="w-full py-2.5 text-sm font-bold text-white rounded-xl disabled:opacity-40 transition-all"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
-                {savingTime ? 'Enregistrement...' : timeSaved ? '✓ Temps enregistré — Mettre à jour' : 'Enregistrer le temps'}
-              </button>
             </div>
-          )}
+
+            {/* Total preview */}
+            {tempsParPersonneMin > 0 && (
+              <div className="rounded-xl px-4 py-3 flex items-center justify-between"
+                style={{ background: 'linear-gradient(135deg, #eef2ff, #f5f3ff)' }}>
+                <span className="text-xs text-indigo-600 font-semibold">
+                  {fmtMin(tempsParPersonneMin)} × {nbPart} participant{nbPart > 1 ? 's' : ''}
+                </span>
+                <span className="text-base font-extrabold text-indigo-800">= {fmtMin(tempsTotalMin)}</span>
+              </div>
+            )}
+
+            {/* Save button */}
+            <button onClick={handleSaveTime}
+              disabled={savingTime || tempsParPersonneMin === 0}
+              className="w-full py-3 text-sm font-bold text-white rounded-xl disabled:opacity-40 transition-all"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+              {savingTime ? 'Enregistrement...' : timeSaved ? '✓ Temps enregistré — Mettre à jour' : 'Enregistrer le temps'}
+            </button>
+          </div>
         </div>
 
         {/* Intervenants externes ayant opéré — visible to all roles */}
