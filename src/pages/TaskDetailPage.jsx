@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { updateTaskStatus, createNotification, addTaskOperator, deleteTask } from '../services/firestoreService';
+import { updateTaskStatus, createNotification, addTaskOperator, deleteTask, updateTaskTime } from '../services/firestoreService';
 
 function tsToDate(ts) {
   if (!ts) return null;
@@ -64,6 +64,25 @@ export default function TaskDetailPage() {
   const [descError, setDescError]       = useState('');
   const [loading, setLoading]           = useState(false);
   const [images, setImages]             = useState([]);
+
+  // Time tracking
+  const [tempsH,    setTempsH]    = useState(() => task?.tempsParPersonne ? Math.floor(task.tempsParPersonne / 60) : 0);
+  const [tempsM,    setTempsM]    = useState(() => task?.tempsParPersonne ? task.tempsParPersonne % 60 : 0);
+  const [nbPart,    setNbPart]    = useState(() => task?.nbParticipants || 1);
+  const [savingTime, setSavingTime] = useState(false);
+  const [timeSaved,  setTimeSaved]  = useState(!!task?.tempsTotal);
+
+  const tempsParPersonneMin = tempsH * 60 + tempsM;
+  const tempsTotalMin       = tempsParPersonneMin * nbPart;
+  const fmtMin = (m) => m > 0 ? (Math.floor(m/60) > 0 ? `${Math.floor(m/60)}h ${m%60}min` : `${m%60}min`) : '—';
+
+  const handleSaveTime = async () => {
+    if (tempsParPersonneMin === 0) return;
+    setSavingTime(true);
+    await updateTaskTime(task.id, tempsParPersonneMin, nbPart);
+    setTimeSaved(true);
+    setSavingTime(false);
+  };
 
   // Operators
   const [operators, setOperators]           = useState(task?.operators || []);
@@ -258,6 +277,92 @@ export default function TaskDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* ── Temps de réalisation ──────────────────────────────────── */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">⏱</span>
+            <h2 className="font-bold text-gray-700 text-sm">Temps de réalisation</h2>
+            {task.tempsTotal > 0 && (
+              <span className="ml-auto text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">
+                Total : {fmtMin(task.tempsTotal)}
+              </span>
+            )}
+          </div>
+
+          {/* Existing saved value */}
+          {task.tempsTotal > 0 && (
+            <div className="flex gap-3 mb-3 text-center">
+              <div className="flex-1 bg-blue-50 rounded-xl py-2">
+                <p className="text-lg font-extrabold text-blue-700">{fmtMin(task.tempsParPersonne)}</p>
+                <p className="text-xs text-blue-400">par personne</p>
+              </div>
+              <div className="flex-1 bg-purple-50 rounded-xl py-2">
+                <p className="text-lg font-extrabold text-purple-700">{task.nbParticipants}</p>
+                <p className="text-xs text-purple-400">participant{task.nbParticipants > 1 ? 's' : ''}</p>
+              </div>
+              <div className="flex-1 bg-indigo-50 rounded-xl py-2">
+                <p className="text-lg font-extrabold text-indigo-700">{fmtMin(task.tempsTotal)}</p>
+                <p className="text-xs text-indigo-400">total</p>
+              </div>
+            </div>
+          )}
+
+          {/* Input form — responsable only */}
+          {role === 'responsable' && (
+            <div className="space-y-3">
+              {/* Time per person */}
+              <div>
+                <p className="text-xs font-bold text-gray-500 mb-1.5">Durée par personne</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 flex-1">
+                    <input type="number" min="0" max="99" value={tempsH}
+                      onChange={e => setTempsH(Math.max(0, parseInt(e.target.value)||0))}
+                      className="w-12 text-center text-xl font-extrabold text-gray-800 outline-none bg-transparent" />
+                    <span className="text-sm text-gray-400 font-semibold">h</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-300">:</span>
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 flex-1">
+                    <input type="number" min="0" max="59" value={tempsM}
+                      onChange={e => setTempsM(Math.min(59, Math.max(0, parseInt(e.target.value)||0)))}
+                      className="w-12 text-center text-xl font-extrabold text-gray-800 outline-none bg-transparent" />
+                    <span className="text-sm text-gray-400 font-semibold">min</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Number of participants */}
+              <div>
+                <p className="text-xs font-bold text-gray-500 mb-1.5">Nombre de participants</p>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setNbPart(p => Math.max(1, p-1))}
+                    className="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 font-extrabold text-lg hover:bg-gray-200 transition-colors flex-shrink-0">−</button>
+                  <span className="flex-1 text-center text-2xl font-extrabold text-gray-800">{nbPart}</span>
+                  <button onClick={() => setNbPart(p => p+1)}
+                    className="w-9 h-9 rounded-xl text-white font-extrabold text-lg hover:brightness-110 transition-all flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>+</button>
+                </div>
+              </div>
+
+              {/* Total preview */}
+              {tempsParPersonneMin > 0 && (
+                <div className="bg-indigo-50 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-xs text-indigo-600 font-semibold">
+                    {fmtMin(tempsParPersonneMin)} × {nbPart} participant{nbPart>1?'s':''}
+                  </span>
+                  <span className="text-sm font-extrabold text-indigo-700">= {fmtMin(tempsTotalMin)}</span>
+                </div>
+              )}
+
+              <button onClick={handleSaveTime}
+                disabled={savingTime || tempsParPersonneMin === 0}
+                className="w-full py-2.5 text-sm font-bold text-white rounded-xl disabled:opacity-40 transition-all"
+                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+                {savingTime ? 'Enregistrement...' : timeSaved ? '✓ Temps enregistré — Mettre à jour' : 'Enregistrer le temps'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Intervenants externes ayant opéré — visible to all roles */}

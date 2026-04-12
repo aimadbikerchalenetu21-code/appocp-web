@@ -113,6 +113,11 @@ export const deleteAllTasks = async () => {
   await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
 };
 
+export const updateTaskTime = async (taskId, tempsParPersonne, nbParticipants) => {
+  const tempsTotal = tempsParPersonne * nbParticipants;
+  await updateDoc(doc(db, 'tasks', taskId), { tempsParPersonne, nbParticipants, tempsTotal });
+};
+
 export const addTaskOperator = async (taskId, operator) => {
   await updateDoc(doc(db, 'tasks', taskId), {
     operators: arrayUnion(operator),

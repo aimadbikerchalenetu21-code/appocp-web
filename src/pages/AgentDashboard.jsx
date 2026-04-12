@@ -172,12 +172,18 @@ export default function AgentDashboard() {
   const upcomingCount = allTasks.filter((t) => t.dueDate  >  today).length;
   const historyCount  = allTasks.filter((t) => t.dueDate  <  today).length;
 
-  const total      = tasks.length;
-  const completed  = tasks.filter((t) => t.status === 'completed').length;
-  const inProgress = tasks.filter((t) => t.status === 'in-progress').length;
-  const blocked    = tasks.filter((t) => t.status === 'blocked').length;
-  const pending    = tasks.filter((t) => t.status === 'pending').length;
-  const pct        = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const total          = tasks.length;
+  const completed      = tasks.filter((t) => t.status === 'completed').length;
+  const inProgress     = tasks.filter((t) => t.status === 'in-progress').length;
+  const blocked        = tasks.filter((t) => t.status === 'blocked').length;
+  const pending        = tasks.filter((t) => t.status === 'pending').length;
+  const pct            = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const totalTempsMin  = tasks.reduce((sum, t) => sum + (t.tempsTotal || 0), 0);
+  const fmtMin = (m) => {
+    if (!m) return '—';
+    const h = Math.floor(m / 60), mn = m % 60;
+    return h > 0 ? `${h}h ${mn > 0 ? mn + 'min' : ''}`.trim() : `${mn}min`;
+  };
 
   // Group ALL tasks by date (for calendar dots and selected-day tasks)
   const tasksByDate = allTasks.reduce((acc, t) => {
@@ -466,6 +472,14 @@ export default function AgentDashboard() {
                     </div>
                   ))}
                 </div>
+              </div>
+              {/* Total realization time */}
+              <div className="mt-4 flex items-center justify-between bg-indigo-50 rounded-xl px-4 py-2.5 border border-indigo-100">
+                <div className="flex items-center gap-2">
+                  <Timer size={15} className="text-indigo-500" />
+                  <span className="text-xs font-semibold text-indigo-700">Temps total de réalisation</span>
+                </div>
+                <span className="text-sm font-extrabold text-indigo-700 tabular-nums">{fmtMin(totalTempsMin)}</span>
               </div>
             </div>
 
