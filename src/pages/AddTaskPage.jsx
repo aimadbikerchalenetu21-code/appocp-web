@@ -4,17 +4,17 @@ import { useAuth } from '../context/AuthContext';
 import { createTask, createResponsableAccount, getAllAgentNames, getAllResponsables } from '../services/firestoreService';
 import {
   User, AlertCircle, CheckCircle,
-  Send, Plus, X, ChevronDown, ChevronUp, Flag,
+  Send, Plus, X, ChevronDown, ChevronUp,
   Hash, FileText, Settings, MapPin, Calendar,
+  CheckSquare, Square,
 } from 'lucide-react';
 import ExcelTaskImporter from '../components/ExcelTaskImporter';
 
-const PRIORITIES = ['Faible', 'Moyen', 'Élevé', 'Critique'];
 const PRIORITY_STYLES = {
-  Faible:   { chip: 'bg-green-50 text-green-700 border-green-400',   dot: 'bg-green-500' },
-  Moyen:    { chip: 'bg-blue-50 text-blue-700 border-blue-400',      dot: 'bg-blue-500' },
-  Élevé:   { chip: 'bg-orange-50 text-orange-700 border-orange-400', dot: 'bg-orange-500' },
-  Critique: { chip: 'bg-red-50 text-red-700 border-red-400',         dot: 'bg-red-500' },
+  Faible:   { dot: 'bg-green-500' },
+  Moyen:    { dot: 'bg-blue-500' },
+  Élevé:   { dot: 'bg-orange-500' },
+  Critique: { dot: 'bg-red-500' },
 };
 
 function toYMD(d) {
@@ -30,40 +30,24 @@ function fmtShort(ymd) {
 let _id = 0;
 const uid = () => ++_id;
 
-function makeTask() {
+function makeTask(extra = {}) {
   return {
     id:            uid(),
-    title:         '',       // Désignation
-    ordre:         '',       // Ordre (N° OT SAP)
-    avis:          '',       // Avis (N° notification)
-    type:          '',       // Type d'ordre
-    objTechnique:  '',       // Obj. technique
-    priority:      'Moyen', // Désign.priorité
-    date:          null,     // Date début (YYYY-MM-DD)
-    dateFin:       null,     // Date fin   (YYYY-MM-DD)
-    statutSys:     '',       // Statut système
-    descPosTrav:   '',       // Desc. pos.trav.
-    planEntretien: '',       // Plan entretien
+    title:         '',
+    ordre:         '',
+    avis:          '',
+    type:          '',
+    objTechnique:  '',
+    priority:      'Moyen',
+    date:          null,
+    dateFin:       null,
+    statutSys:     '',
+    descPosTrav:   '',
+    planEntretien: '',
     expanded:      true,
+    selected:      true,   // ← new: selected for next assignment
+    ...extra,
   };
-}
-
-/* ── Priority picker ────────────────────────────────────────────────── */
-function PriorityPicker({ value, onChange }) {
-  return (
-    <div className="flex gap-1.5 flex-wrap">
-      {PRIORITIES.map((p) => (
-        <button key={p} onClick={() => onChange(p)}
-          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
-            value === p
-              ? PRIORITY_STYLES[p].chip + ' border-2'
-              : 'bg-gray-50 text-gray-400 border-gray-100 hover:border-gray-200'
-          }`}>
-          {p}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 /* ── Field row helper ───────────────────────────────────────────────── */
@@ -81,20 +65,31 @@ function Field({ icon: Icon, label, children }) {
 const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 transition-colors bg-white';
 
 /* ── Task card ──────────────────────────────────────────────────────── */
-function TaskCard({ task, onUpdate, onRemove }) {
+function TaskCard({ task, onUpdate, onRemove, onToggle }) {
   const ps = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.Moyen;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
+      task.selected ? 'border-green-300' : 'border-gray-100 opacity-50'
+    }`}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ps.dot}`} />
+      <div className="flex items-center gap-2 px-3 py-3">
+        {/* Checkbox */}
+        <button onClick={onToggle} className="flex-shrink-0 p-0.5">
+          {task.selected
+            ? <CheckSquare size={18} className="text-green-600" />
+            : <Square size={18} className="text-gray-300" />}
+        </button>
+
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ps.dot}`} />
+
         <input
           value={task.title}
           onChange={(e) => onUpdate({ title: e.target.value })}
           placeholder="Désignation de la tâche..."
-          className="flex-1 text-sm font-semibold text-gray-800 outline-none placeholder-gray-300 bg-transparent"
+          className="flex-1 text-sm font-semibold text-gray-800 outline-none placeholder-gray-300 bg-transparent min-w-0"
         />
+
         <div className="flex items-center gap-1 flex-shrink-0">
           {task.date && (
             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
@@ -115,8 +110,6 @@ function TaskCard({ task, onUpdate, onRemove }) {
       {/* Expanded properties */}
       {task.expanded && (
         <div className="border-t border-gray-50 px-4 py-4 space-y-3 bg-gray-50/50">
-
-          {/* Row 1: Ordre / Avis / Type */}
           <div className="grid grid-cols-3 gap-2">
             <Field icon={Hash} label="Ordre">
               <input value={task.ordre} onChange={(e) => onUpdate({ ordre: e.target.value })}
@@ -131,14 +124,10 @@ function TaskCard({ task, onUpdate, onRemove }) {
                 placeholder="Ex: ZEST" className={inputCls} />
             </Field>
           </div>
-
-          {/* Obj. technique */}
           <Field icon={MapPin} label="Obj. technique">
             <input value={task.objTechnique} onChange={(e) => onUpdate({ objTechnique: e.target.value })}
               placeholder="Ex: SF01-PE-COMM-1" className={inputCls} />
           </Field>
-
-          {/* Dates */}
           <div className="grid grid-cols-2 gap-2">
             <Field icon={Calendar} label="Date début">
               <input type="date" value={task.date || ''}
@@ -151,26 +140,19 @@ function TaskCard({ task, onUpdate, onRemove }) {
                 className={inputCls} />
             </Field>
           </div>
-
-          {/* Statut système */}
           <Field icon={Settings} label="Statut système">
             <input value={task.statutSys} onChange={(e) => onUpdate({ statutSys: e.target.value })}
               placeholder="Ex: CRÉÉ CCRP DANF" className={inputCls} />
           </Field>
-
-          {/* Desc. pos.trav. */}
           <Field icon={FileText} label="Desc. pos.trav.">
             <textarea value={task.descPosTrav} onChange={(e) => onUpdate({ descPosTrav: e.target.value })}
               rows={2} placeholder="Ex: Section Mécanique Engrais TSI CRPR"
               className={`${inputCls} resize-none`} />
           </Field>
-
-          {/* Plan entretien */}
           <Field icon={Hash} label="Plan entretien">
             <input value={task.planEntretien} onChange={(e) => onUpdate({ planEntretien: e.target.value })}
               placeholder="Ex: 54495" className={inputCls} />
           </Field>
-
         </div>
       )}
     </div>
@@ -188,18 +170,29 @@ export default function AddTaskPage() {
   const [responsablePassword, setResponsablePassword] = useState('');
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
-  const [credentials, setCredentials]   = useState(null);
-  const [agents, setAgents]             = useState([]);       // collaborateurs OCP
-  const [responsables, setResponsables] = useState([]);       // intervenants externes existants
+  const [credentials, setCredentials]   = useState(null);   // success screen data
+  const [agents, setAgents]             = useState([]);
+  const [responsables, setResponsables] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const inputRef = useRef(null);
-  const todayYMD = toYMD(new Date());
+  const inputRef  = useRef(null);
+  const todayYMD  = toYMD(new Date());
 
   useEffect(() => {
     getAllAgentNames().then(setAgents).catch(() => {});
     getAllResponsables().then(setResponsables).catch(() => {});
   }, []);
+
+  /* ── Selection helpers ───────────────────────────────────────────── */
+  const selectedTasks   = tasks.filter((t) => t.selected && t.title.trim());
+  const unselectedTasks = tasks.filter((t) => !t.selected && t.title.trim());
+  const allSelected     = tasks.filter((t) => t.title.trim()).every((t) => t.selected);
+  const noneSelected    = tasks.filter((t) => t.title.trim()).every((t) => !t.selected);
+
+  const toggleAll = () => {
+    const willSelect = !allSelected;
+    setTasks((prev) => prev.map((t) => ({ ...t, selected: willSelect })));
+  };
 
   /* ── Task management ─────────────────────────────────────────────── */
   const addTask = () => {
@@ -209,7 +202,7 @@ export default function AddTaskPage() {
       setTasks((prev) => {
         const last = prev[prev.length - 1];
         if (last && !last.title) return prev.map((t) => t.id === last.id ? { ...t, title } : t);
-        return [...prev.map((t) => ({ ...t, expanded: false })), { ...makeTask(), title }];
+        return [...prev.map((t) => ({ ...t, expanded: false })), makeTask({ title })];
       });
     } else {
       setTasks((prev) => [...prev.map((t) => ({ ...t, expanded: false })), makeTask()]);
@@ -217,11 +210,11 @@ export default function AddTaskPage() {
   };
 
   const handleInputKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTask(); } };
-  const updateTask = (id, patch) => setTasks((prev) => prev.map((t) => t.id === id ? { ...t, ...patch } : t));
-  const removeTask = (id) => setTasks((prev) => prev.filter((t) => t.id !== id));
+  const updateTask  = (id, patch) => setTasks((prev) => prev.map((t) => t.id === id ? { ...t, ...patch } : t));
+  const removeTask  = (id)        => setTasks((prev) => prev.filter((t) => t.id !== id));
+  const toggleTask  = (id)        => setTasks((prev) => prev.map((t) => t.id === id ? { ...t, selected: !t.selected } : t));
 
-  /* ── Autocomplete — merge agents + responsables ─────────────────── */
-  // All known accounts (both collections)
+  /* ── Autocomplete ────────────────────────────────────────────────── */
   const allKnownEmails = [
     ...agents.map((a) => ({ email: a.email, uid: a.uid, name: a.name, type: 'agent' })),
     ...responsables.map((r) => ({ email: r.email, uid: r.uid, name: r.name, type: 'responsable' })),
@@ -231,7 +224,6 @@ export default function AddTaskPage() {
     (a) => responsableEmail && a.email.toLowerCase().includes(responsableEmail.toLowerCase())
   );
 
-  // Existing = found in responsables OR agents collection
   const existingResponsable = responsables.find(
     (r) => r.email?.toLowerCase() === responsableEmail.trim().toLowerCase()
   );
@@ -239,16 +231,15 @@ export default function AddTaskPage() {
     (a) => a.email?.toLowerCase() === responsableEmail.trim().toLowerCase()
   );
   const isExistingAccount = !!(existingResponsable || existingAgent);
-  const existingUid = existingResponsable?.uid || existingAgent?.uid || null;
+  const existingUid       = existingResponsable?.uid || existingAgent?.uid || null;
 
-  /* ── Excel import handler ────────────────────────────────────────── */
+  /* ── Excel import ────────────────────────────────────────────────── */
   const handleTasksExtracted = (importedTasks) => {
     setTasks((prev) => {
       const existingTitles = new Set(prev.map((t) => t.title.trim().toLowerCase()));
       const newTasks = importedTasks
         .filter((t) => !existingTitles.has(t.title.trim().toLowerCase()))
-        .map((t) => ({
-          ...makeTask(),
+        .map((t) => makeTask({
           title:         t.title         || '',
           ordre:         t.ordre         || '',
           avis:          t.avis          || '',
@@ -261,21 +252,25 @@ export default function AddTaskPage() {
           descPosTrav:   t.descPosTrav   || '',
           planEntretien: t.planEntretien || '',
           expanded:      false,
+          selected:      true,
         }));
-      return [...prev.map((t) => ({ ...t, expanded: false })), ...newTasks];
+      // Remove the blank placeholder if it's the only task
+      const cleaned = prev.filter((t) => t.title.trim());
+      return [...cleaned.map((t) => ({ ...t, expanded: false })), ...newTasks];
     });
   };
 
   /* ── Submit ──────────────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    let allTasks = [...tasks];
+    // Merge quick-add input into selected tasks
     if (currentInput.trim()) {
-      allTasks = [...tasks, { ...makeTask(), title: currentInput.trim() }];
+      setTasks((prev) => [...prev, makeTask({ title: currentInput.trim(), selected: true })]);
       setCurrentInput('');
+      return; // re-render then user clicks submit again — or we can proceed directly:
     }
 
-    const validTasks = allTasks.filter((t) => t.title.trim());
-    if (validTasks.length === 0) { setError('Ajoutez au moins une tâche avec une désignation.'); return; }
+    const toAssign = tasks.filter((t) => t.selected && t.title.trim());
+    if (toAssign.length === 0) { setError('Sélectionnez au moins une tâche à assigner.'); return; }
     if (!responsableEmail.trim()) { setError("L'email de l'intervenant est obligatoire."); return; }
 
     setLoading(true); setError('');
@@ -296,10 +291,9 @@ export default function AddTaskPage() {
       }
 
       await Promise.all(
-        validTasks.map((task) =>
+        toAssign.map((task) =>
           createTask(
             {
-              // Core SAP fields
               title:         task.title.trim(),
               ordre:         task.ordre.trim(),
               avis:          task.avis.trim(),
@@ -311,7 +305,6 @@ export default function AddTaskPage() {
               statutSys:     task.statutSys.trim(),
               descPosTrav:   task.descPosTrav.trim(),
               planEntretien: task.planEntretien.trim(),
-              // Legacy fields for dashboard/detail compatibility
               zone:          task.objTechnique.trim(),
               assetTags:     [task.ordre, task.avis].filter(Boolean).join(' | '),
               procedure:     task.descPosTrav.trim(),
@@ -322,23 +315,43 @@ export default function AddTaskPage() {
         )
       );
 
+      // Remove assigned tasks; keep unselected ones for next round
+      const remaining = tasks.filter((t) => !t.selected || !t.title.trim());
+
       setCredentials({
-        email:      responsableEmail.trim(),
-        password:   isExistingAccount ? null : responsablePassword,
-        isExisting: isExistingAccount,
-        count:      validTasks.length,
+        email:         responsableEmail.trim(),
+        password:      isExistingAccount ? null : responsablePassword,
+        isExisting:    isExistingAccount,
+        count:         toAssign.length,
+        remainingCount: remaining.filter((t) => t.title.trim()).length,
+        remainingTasks: remaining,
       });
+
     } catch (e) {
       if (e.message === 'EMAIL_EXISTS') setError('Cet email est déjà utilisé par un autre compte.');
       else setError('Erreur lors de la création des tâches.');
     } finally { setLoading(false); }
   };
 
-  const resetForm = (keepEmail = '') => {
+  /* ── Continue with remaining tasks ──────────────────────────────── */
+  const continueWithRemaining = () => {
+    const remaining = credentials.remainingTasks;
+    // Re-select all remaining tasks for convenience
+    setTasks(remaining.length > 0
+      ? remaining.map((t) => ({ ...t, selected: true, expanded: false }))
+      : [makeTask()]
+    );
+    setResponsableEmail('');
+    setResponsablePassword('');
+    setError('');
+    setCredentials(null);
+  };
+
+  const resetAll = () => {
     setCredentials(null);
     setTasks([makeTask()]);
     setCurrentInput('');
-    setResponsableEmail(keepEmail);
+    setResponsableEmail('');
     setResponsablePassword('');
   };
 
@@ -346,17 +359,19 @@ export default function AddTaskPage() {
   if (credentials) {
     return (
       <div className="p-6 max-w-lg mx-auto">
-        <div className="bg-white rounded-2xl p-10 text-center shadow-sm border border-gray-100">
-          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={40} className="text-green-600" />
+        <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
+          <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+            <CheckCircle size={34} className="text-green-600" />
           </div>
           <h2 className="text-xl font-bold text-gray-800 mb-1">
-            {credentials.count} tâche{credentials.count > 1 ? 's créées' : ' créée'} !
+            {credentials.count} tâche{credentials.count > 1 ? 's assignées' : ' assignée'} !
           </h2>
-          <p className="text-gray-500 text-sm mb-6">
-            {credentials.isExisting ? 'Assignées au compte existant.' : "Assignées à l'intervenant externe."}
+          <p className="text-gray-500 text-sm mb-5">
+            {credentials.isExisting ? 'Compte existant.' : 'Nouveau compte créé.'}
           </p>
-          <div className="bg-gray-50 rounded-xl p-4 mb-5 text-left">
+
+          {/* Intervenant info */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-4 text-left">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Intervenant</p>
             <div className="flex items-center gap-2 mb-1.5">
               <User size={14} className="text-gray-400" />
@@ -369,8 +384,24 @@ export default function AddTaskPage() {
               </div>
             )}
           </div>
+
+          {/* Remaining banner */}
+          {credentials.remainingCount > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-left flex items-center gap-3">
+              <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-extrabold text-amber-700">{credentials.remainingCount}</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-amber-800">
+                  {credentials.remainingCount} tâche{credentials.remainingCount > 1 ? 's' : ''} restante{credentials.remainingCount > 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-amber-600">Non encore assignées à un intervenant</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-3">
-            {!credentials.isExisting && (
+            {!credentials.isExisting && credentials.password && (
               <button onClick={() => {
                 const s = encodeURIComponent('Vos identifiants — Suivi des Travaux Journaliers');
                 const b = encodeURIComponent(`Email: ${credentials.email}\nMot de passe: ${credentials.password}`);
@@ -380,10 +411,19 @@ export default function AddTaskPage() {
                 <Send size={16} /> Envoyer par Email
               </button>
             )}
-            <button onClick={() => resetForm(credentials.email)}
+
+            {credentials.remainingCount > 0 ? (
+              <button onClick={continueWithRemaining}
+                className="w-full flex items-center justify-center gap-2 text-white rounded-xl py-3 text-sm font-bold shadow-md"
+                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+                <Plus size={16} /> Assigner les {credentials.remainingCount} tâches restantes
+              </button>
+            ) : null}
+
+            <button onClick={resetAll}
               className="w-full flex items-center justify-center gap-2 text-white rounded-xl py-3 text-sm font-bold shadow-md"
               style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
-              <Plus size={16} /> Assigner d'autres tâches
+              <Plus size={16} /> Nouvelle session d'assignation
             </button>
             <button onClick={() => navigate('/dashboard')}
               className="w-full bg-gray-100 text-gray-700 rounded-xl py-3 text-sm font-bold hover:bg-gray-200 transition-colors">
@@ -395,41 +435,68 @@ export default function AddTaskPage() {
     );
   }
 
-  const validCount = tasks.filter((t) => t.title.trim()).length + (currentInput.trim() ? 1 : 0);
+  const namedTasks     = tasks.filter((t) => t.title.trim());
+  const totalNamed     = namedTasks.length;
+  const selectedCount  = namedTasks.filter((t) => t.selected).length;
+  const unselectedCount= totalNamed - selectedCount;
 
   /* ── Form ────────────────────────────────────────────────────────── */
   return (
-    <div className="p-6 max-w-2xl mx-auto pb-10">
+    <div className="p-4 max-w-2xl mx-auto pb-10">
       {/* Header */}
-      <div className="rounded-2xl p-5 mb-6 shadow-md"
+      <div className="rounded-2xl p-5 mb-5 shadow-md"
         style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%)' }}>
         <h1 className="text-xl font-extrabold text-white">Nouvelle tâche</h1>
         <p className="text-green-200 text-sm mt-0.5">Créer et assigner</p>
       </div>
 
       <div className="space-y-4">
-
         {/* Excel import */}
         <ExcelTaskImporter onTasksExtracted={handleTasksExtracted} />
 
         {/* Task list */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-semibold text-gray-700">
-              Tâches *{' '}
-              <span className="text-gray-400 font-normal">({tasks.filter((t) => t.title.trim()).length})</span>
-            </label>
-            <button onClick={() => setTasks((p) => [...p.map((t) => ({ ...t, expanded: false })), makeTask()])}
-              className="flex items-center gap-1 text-xs text-green-700 font-semibold hover:text-green-600 transition-colors">
-              <Plus size={13} /> Ajouter une tâche
-            </button>
+          {/* Header row: count + select-all + add */}
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className="text-sm font-semibold text-gray-700">
+                Tâches{' '}
+                <span className="text-gray-400 font-normal">({totalNamed})</span>
+              </label>
+              {totalNamed > 0 && (
+                <>
+                  <span className="text-green-700 text-xs font-bold bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                    {selectedCount} sélectionnée{selectedCount > 1 ? 's' : ''}
+                  </span>
+                  {unselectedCount > 0 && (
+                    <span className="text-gray-400 text-xs font-semibold bg-gray-100 px-2 py-0.5 rounded-full">
+                      {unselectedCount} non sélectionnée{unselectedCount > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {totalNamed > 1 && (
+                <button onClick={toggleAll}
+                  className="flex items-center gap-1 text-xs text-blue-600 font-semibold hover:text-blue-700 transition-colors bg-blue-50 px-2.5 py-1.5 rounded-lg border border-blue-200">
+                  {allSelected ? <Square size={12} /> : <CheckSquare size={12} />}
+                  {allSelected ? 'Tout désélect.' : 'Tout sélect.'}
+                </button>
+              )}
+              <button onClick={() => setTasks((p) => [...p.map((t) => ({ ...t, expanded: false })), makeTask()])}
+                className="flex items-center gap-1 text-xs text-green-700 font-semibold hover:text-green-600 transition-colors">
+                <Plus size={13} /> Ajouter
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
             {tasks.map((task) => (
               <TaskCard key={task.id} task={task}
                 onUpdate={(patch) => updateTask(task.id, patch)}
-                onRemove={() => removeTask(task.id)} />
+                onRemove={() => removeTask(task.id)}
+                onToggle={() => toggleTask(task.id)} />
             ))}
           </div>
 
@@ -447,7 +514,8 @@ export default function AddTaskPage() {
         {/* Assign to intervenant */}
         <div className="bg-blue-50 rounded-2xl border border-blue-200 p-5 space-y-3">
           <p className="text-sm font-bold text-blue-700">
-            <User size={13} className="inline mr-1" />Assigner à un Intervenant externe *
+            <User size={13} className="inline mr-1" />
+            Assigner les {selectedCount > 0 ? selectedCount : '…'} tâche{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''} à *
           </p>
           <div className="relative">
             <input value={responsableEmail}
@@ -493,11 +561,15 @@ export default function AddTaskPage() {
         )}
 
         {/* Submit */}
-        <button onClick={handleSubmit} disabled={loading || validCount === 0}
+        <button onClick={handleSubmit} disabled={loading || selectedCount === 0}
           className="w-full text-white rounded-2xl py-4 text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.01]"
           style={{ background: 'linear-gradient(135deg, #1c3b72, #0f2347)' }}>
           <Send size={16} />
-          {loading ? 'Création en cours...' : validCount > 0 ? `Créer ${validCount} tâche${validCount > 1 ? 's' : ''}` : 'Créer les tâches'}
+          {loading
+            ? 'Assignation en cours...'
+            : selectedCount > 0
+              ? `Assigner ${selectedCount} tâche${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}`
+              : 'Sélectionnez des tâches'}
         </button>
       </div>
     </div>
