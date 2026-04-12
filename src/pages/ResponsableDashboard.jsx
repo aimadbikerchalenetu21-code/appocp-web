@@ -47,8 +47,9 @@ export default function ResponsableDashboard() {
   const today = todayYMD();
 
   /* ── Split tasks ─────────────────────────────────────────────────────── */
-  const todayTasks  = tasks.filter((t) => t.dueDate === today);
-  const futureTasks = tasks.filter((t) => t.dueDate  >  today);
+  const todayTasks    = tasks.filter((t) => t.dueDate === today);
+  const overdueTasks  = tasks.filter((t) => t.dueDate < today && !['completed', 'blocked'].includes(t.status));
+  const futureTasks   = tasks.filter((t) => t.dueDate  >  today);
   const activeTodayCount = todayTasks.filter((t) => !['completed', 'blocked'].includes(t.status)).length;
 
   /* ── Actions ─────────────────────────────────────────────────────────── */
@@ -96,6 +97,59 @@ export default function ResponsableDashboard() {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto bg-gray-50 pb-8">
+
+        {/* ── Tâches en retard ───────────────────────────────────────── */}
+        {overdueTasks.length > 0 && (
+          <div className="px-4 pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-red-700">En retard</h2>
+              <span className="text-xs bg-red-50 text-red-700 px-3 py-1 rounded-full font-semibold border border-red-200">
+                {overdueTasks.length} tâche{overdueTasks.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {overdueTasks.map((task) => {
+                const isInProgress = task.status === 'in-progress';
+                return (
+                  <div key={task.id}
+                    className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                      onClick={() => navigate('/task/' + task.id, { state: { task } })}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-50">
+                        <AlertTriangle size={18} className="text-red-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-800 text-sm truncate">{task.title}</p>
+                        {task.dueDate && (
+                          <p className="flex items-center gap-1 text-xs text-red-400 mt-0.5">
+                            <Calendar size={10} /> Prévu le {task.dueDate}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 bg-red-100 text-red-700">
+                        En retard
+                      </span>
+                    </div>
+                    <div className="flex">
+                      {!isInProgress && (
+                        <button onClick={() => handleStart(task)}
+                          className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-extrabold text-white"
+                          style={{ background: 'linear-gradient(135deg, #15803d, #166534)' }}>
+                          <Play size={15} fill="white" /> DÉMARRER
+                        </button>
+                      )}
+                      <button onClick={() => handleFin(task)}
+                        className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-extrabold text-white"
+                        style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>
+                        <StopCircle size={15} /> FIN
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Tâches du jour ─────────────────────────────────────────── */}
         <div className="px-4 pt-5">

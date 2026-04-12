@@ -67,28 +67,34 @@ function parseDate(val) {
     return fmt(val);
   }
   if (typeof val === 'number') {
-    // Excel serial date (Windows epoch: Dec 30, 1899)
-    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    // Excel serial date (Windows epoch: Dec 30 1899). Use UTC ms to avoid tz shift.
+    const utcMs = Math.round((val - 25569) * 86400000);
+    const d = new Date(utcMs);
     return isNaN(d.getTime()) ? null : fmt(d);
   }
   if (typeof val === 'string') {
     // M/D/YYYY or DD/MM/YYYY
     const mdy = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (mdy) {
-      // Heuristic: if first number > 12, it's D/M/YYYY
+      // Heuristic: if first number > 12 it's D/M/YYYY
       const [, a, b, y] = mdy;
       const [mo, dy] = parseInt(a) > 12 ? [b, a] : [a, b];
-      const d = new Date(parseInt(y), parseInt(mo) - 1, parseInt(dy));
+      // Build UTC date string to avoid timezone shift
+      const iso = `${y}-${String(mo).padStart(2,'0')}-${String(dy).padStart(2,'0')}T00:00:00Z`;
+      const d = new Date(iso);
       return isNaN(d.getTime()) ? null : fmt(d);
     }
-    const d = new Date(val);
+    // Try ISO or other formats
+    const iso = val.match(/^(\d{4})-(\d{2})-(\d{2})/) ? val + 'T00:00:00Z' : val;
+    const d = new Date(iso);
     return isNaN(d.getTime()) ? null : fmt(d);
   }
   return null;
 }
 
 function fmt(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // Always use UTC components — avoids off-by-one when the Date is midnight UTC
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 /**
