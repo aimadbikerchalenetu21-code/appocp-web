@@ -357,9 +357,13 @@ export default function TaskDetailPage() {
             <>
               {/* OK + Point Bloquant buttons */}
               <div className="flex">
-                <button onClick={handleOK} disabled={loading}
-                  className="flex-1 flex items-center justify-center gap-2 py-5 text-sm font-extrabold text-white transition-all hover:brightness-110 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+                <button onClick={handleOK} disabled={loading || status !== 'in-progress'}
+                  className="flex-1 flex items-center justify-center gap-2 py-5 text-sm font-extrabold transition-all"
+                  style={{
+                    color: status !== 'in-progress' ? '#d1d5db' : 'white',
+                    background: status !== 'in-progress' ? '#f3f4f6' : 'linear-gradient(135deg, #16a34a, #15803d)',
+                    cursor: status !== 'in-progress' ? 'not-allowed' : 'pointer',
+                  }}>
                   <CheckCircle size={18} /> OK
                 </button>
                 <button
