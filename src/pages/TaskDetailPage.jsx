@@ -85,11 +85,11 @@ export default function TaskDetailPage() {
   };
 
   // Operators
-  const [operators, setOperators]           = useState(task?.operators || []);
-  const [showAddOp, setShowAddOp]           = useState(false);
-  const [newOpEmail, setNewOpEmail]         = useState('');
-  const [addingOp, setAddingOp]             = useState(false);
-  const [opError, setOpError]               = useState('');
+  const [operators, setOperators] = useState(task?.operators || []);
+  const [showAddOp, setShowAddOp] = useState(false);
+  const [newOpName, setNewOpName] = useState('');
+  const [addingOp, setAddingOp]   = useState(false);
+  const [opError,  setOpError]    = useState('');
 
   if (!task) {
     return (
@@ -125,14 +125,13 @@ export default function TaskDetailPage() {
   };
 
   const handleAddOperator = async () => {
-    const email = newOpEmail.trim().toLowerCase();
-    if (!email) { setOpError('Email requis.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setOpError('Email invalide.'); return; }
-    if (operators.includes(email)) { setOpError('Cet intervenant est déjà ajouté.'); return; }
+    const name = newOpName.trim();
+    if (!name) { setOpError('Le nom est requis.'); return; }
+    if (operators.includes(name)) { setOpError('Cet intervenant est déjà ajouté.'); return; }
     setAddingOp(true); setOpError('');
-    await addTaskOperator(task.id, email);
-    setOperators((prev) => [...prev, email]);
-    setNewOpEmail(''); setShowAddOp(false); setAddingOp(false);
+    await addTaskOperator(task.id, name);
+    setOperators((prev) => [...prev, name]);
+    setNewOpName(''); setShowAddOp(false); setAddingOp(false);
   };
 
   const handleSubmitBlocked = async () => {
@@ -402,12 +401,12 @@ export default function TaskDetailPage() {
           {operators.length === 0 && !task.assignedTo?.email && (
             <p className="text-xs text-gray-400 text-center py-2">Aucun intervenant enregistré.</p>
           )}
-          {operators.map((email) => (
-            <div key={email} className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0">
+          {operators.map((name) => (
+            <div key={name} className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0">
               <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700">
-                {email[0].toUpperCase()}
+                {name[0].toUpperCase()}
               </div>
-              <span className="text-sm text-gray-700">{email}</span>
+              <span className="text-sm font-semibold text-gray-700">{name}</span>
             </div>
           ))}
 
@@ -422,10 +421,11 @@ export default function TaskDetailPage() {
               ) : (
                 <div className="mt-3 space-y-2">
                   <input
-                    type="email"
-                    value={newOpEmail}
-                    onChange={(e) => { setNewOpEmail(e.target.value); setOpError(''); }}
-                    placeholder="Email de l'intervenant"
+                    type="text"
+                    value={newOpName}
+                    onChange={(e) => { setNewOpName(e.target.value); setOpError(''); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddOperator()}
+                    placeholder="Nom de l'intervenant"
                     className="w-full border-2 border-blue-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 transition-colors"
                     autoFocus
                   />
@@ -436,7 +436,7 @@ export default function TaskDetailPage() {
                       style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
                       {addingOp ? 'Ajout...' : 'Confirmer'}
                     </button>
-                    <button onClick={() => { setShowAddOp(false); setNewOpEmail(''); setOpError(''); }}
+                    <button onClick={() => { setShowAddOp(false); setNewOpName(''); setOpError(''); }}
                       className="px-4 py-2.5 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
                       Annuler
                     </button>
