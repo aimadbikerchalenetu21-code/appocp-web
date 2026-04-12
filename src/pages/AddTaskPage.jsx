@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { createTask, createResponsableAccount, getAllAgentNames, getAllResponsables } from '../services/firestoreService';
 import {
   User, AlertCircle, CheckCircle, Send, Plus, X,
-  CheckSquare, Square, Search, UserPlus, ChevronDown, Trash2,
+  CheckSquare, Square, Search, UserPlus, Trash2,
 } from 'lucide-react';
 import ExcelTaskImporter from '../components/ExcelTaskImporter';
 
@@ -457,15 +457,28 @@ export default function AddTaskPage() {
                     className="flex-1 text-sm text-gray-600 outline-none bg-transparent placeholder-gray-400" />
                   {search && <button onClick={()=>setSearch('')}><X size={13} className="text-gray-400"/></button>}
                 </div>
-                {/* Counts */}
+                {/* Counts + delete selection */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
-                    {assignedTasks.length} ✓
-                  </span>
-                  {unassignedTasks.length > 0 && (
-                    <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">
-                      {unassignedTasks.length} —
-                    </span>
+                  {selectedTasks.length > 0 ? (
+                    <button
+                      onClick={() => {
+                        const ids = new Set(selectedTasks.map(t => t.id));
+                        setTasks(p => p.filter(t => !ids.has(t.id)));
+                      }}
+                      className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 hover:bg-red-100 transition-colors">
+                      <Trash2 size={12}/> Supprimer ({selectedTasks.length})
+                    </button>
+                  ) : (
+                    <>
+                      <span className="text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
+                        {assignedTasks.length} ✓
+                      </span>
+                      {unassignedTasks.length > 0 && (
+                        <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">
+                          {unassignedTasks.length} —
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -501,24 +514,25 @@ export default function AddTaskPage() {
                         </span>
                       )}
 
-                      {/* Assigned avatar or empty slot */}
+                      {/* Assigned avatar */}
                       {inv ? (
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Avatar color={inv.color} letter={inv.email[0].toUpperCase()} size={26}/>
                           <button onClick={() => unassign(task.id)}
-                            className="p-0.5 rounded-full text-gray-300 hover:text-red-400 transition-colors">
+                            title="Désassigner"
+                            className="p-0.5 rounded-full text-gray-300 hover:text-amber-500 transition-colors">
                             <X size={11}/>
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-200"/>
-                          <button onClick={() => removeTask(task.id)}
-                            className="p-0.5 rounded-full text-gray-200 hover:text-red-400 transition-colors">
-                            <X size={11}/>
-                          </button>
-                        </div>
+                        <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-200 flex-shrink-0"/>
                       )}
+                      {/* Delete button — always visible */}
+                      <button onClick={() => removeTask(task.id)}
+                        title="Supprimer"
+                        className="p-1 rounded-lg text-gray-200 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0">
+                        <Trash2 size={14}/>
+                      </button>
                     </div>
                   );
                 })}
