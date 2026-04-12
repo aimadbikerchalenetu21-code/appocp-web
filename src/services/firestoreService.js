@@ -108,6 +108,11 @@ export const deleteTask = async (taskId) => {
   await deleteDoc(doc(db, 'tasks', taskId));
 };
 
+export const deleteAllTasks = async () => {
+  const snap = await getDocs(collection(db, 'tasks'));
+  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+};
+
 export const addTaskOperator = async (taskId, operator) => {
   await updateDoc(doc(db, 'tasks', taskId), {
     operators: arrayUnion(operator),
