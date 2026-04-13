@@ -195,11 +195,13 @@ export default function AgentDashboard() {
     return acc;
   }, {});
 
-  // Selected day stats
-  const selTasks  = tasksByDate[selectedDay] || [];
-  const selTotal  = selTasks.length;
-  const selDone   = selTasks.filter((t) => t.status === 'completed').length;
-  const selPct    = selTotal > 0 ? Math.round((selDone / selTotal) * 100) : 0;
+  // Selected day stats (only ocpValidated count as "done")
+  const selTasks    = tasksByDate[selectedDay] || [];
+  const selTotal    = selTasks.length;
+  const selDone     = selTasks.filter((t) => t.status === 'completed' && t.ocpValidated).length;
+  const selPct      = selTotal > 0 ? Math.round((selDone / selTotal) * 100) : 0;
+  const selTempsMin = selTasks.filter((t) => t.ocpValidated).reduce((sum, t) => sum + (t.tempsTotal || 0), 0);
+  const selAwaitingValidation = selTasks.filter((t) => ['completed','blocked'].includes(t.status) && !t.ocpValidated).length;
 
   // By collaborateur (today only) — only validated completions count
   const byCollab = (tasksByDate[today] || []).reduce((acc, t) => {
@@ -339,37 +341,65 @@ export default function AgentDashboard() {
               </div>
             </div>
 
-            {/* Selected day: taux de réalisation */}
+            {/* Selected day: taux + temps de réalisation */}
             {selTotal > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
+
+                {/* Header */}
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold text-gray-800">Taux de réalisation par jour</p>
+                    <p className="text-sm font-bold text-gray-800">Historique du jour</p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {selectedDay.split('-').reverse().join('/')} — {selTotal} tâche{selTotal > 1 ? 's' : ''}
                     </p>
                   </div>
                   <MiniDonut pct={selPct} />
                 </div>
-                <div className="grid grid-cols-3 gap-3 mt-2">
-                  {[
-                    { label: 'Total',     v: selTotal,            color: 'text-gray-800' },
-                    { label: 'Faites',    v: selDone,             color: 'text-green-600' },
-                    { label: 'Restantes', v: selTotal - selDone,  color: 'text-red-500' },
-                  ].map(({ label, v, color }) => (
-                    <div key={label} className="text-center bg-gray-50 rounded-xl py-2">
-                      <p className={`text-xl font-extrabold ${color}`}>{v}</p>
-                      <p className="text-xs text-gray-400">{label}</p>
+
+                {/* Taux de réalisation */}
+                <div>
+                  <p className="text-xs font-bold text-gray-500 mb-2">Taux de réalisation</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Total',     v: selTotal,           color: 'text-gray-800' },
+                      { label: 'Validées',  v: selDone,            color: 'text-green-600' },
+                      { label: 'Restantes', v: selTotal - selDone, color: 'text-red-500' },
+                    ].map(({ label, v, color }) => (
+                      <div key={label} className="text-center bg-gray-50 rounded-xl py-2.5">
+                        <p className={`text-xl font-extrabold ${color}`}>{v}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Progress bar */}
+                  <div className="mt-2.5">
+                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${selPct}%`, background: 'linear-gradient(90deg, #166534, #4ade80)' }} />
                     </div>
-                  ))}
-                </div>
-                {/* Day progress bar */}
-                <div className="mt-3">
-                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${selPct}%`, background: 'linear-gradient(90deg, #166534, #4ade80)' }} />
                   </div>
                 </div>
+
+                {/* Temps de réalisation */}
+                <div className="flex items-center justify-between bg-indigo-50 rounded-xl px-4 py-3 border border-indigo-100">
+                  <div className="flex items-center gap-2">
+                    <Timer size={15} className="text-indigo-500" />
+                    <span className="text-xs font-semibold text-indigo-700">Temps total de réalisation</span>
+                  </div>
+                  <span className="text-sm font-extrabold text-indigo-700 tabular-nums">
+                    {selTempsMin > 0 ? fmtMin(selTempsMin) : '—'}
+                  </span>
+                </div>
+
+                {/* Awaiting validation warning */}
+                {selAwaitingValidation > 0 && (
+                  <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2.5">
+                    <ShieldCheck size={14} className="text-orange-500 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-orange-700">
+                      {selAwaitingValidation} tâche{selAwaitingValidation > 1 ? 's' : ''} en attente de validation — non comptée{selAwaitingValidation > 1 ? 's' : ''} dans les stats
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
