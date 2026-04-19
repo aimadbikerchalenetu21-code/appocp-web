@@ -424,46 +424,68 @@ export default function AgentDashboard() {
                   {selTasks.map((task) => {
                     const sc = STATUS_STYLES[task.status] || STATUS_STYLES.pending;
                     const canDelete = task.createdBy?.uid === user?.uid;
+                    const needsValidation = ['completed', 'blocked'].includes(task.status) && !task.ocpValidated;
+                    const isValidated     = ['completed', 'blocked'].includes(task.status) && task.ocpValidated;
                     return (
                       <div key={task.id}
-                        onClick={() => navigate('/task/' + task.id, { state: { task } })}
-                        className={`bg-white rounded-xl p-3.5 shadow-sm border-l-4 ${sc.border} cursor-pointer hover:shadow-md transition-all flex items-center gap-3`}>
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sc.bg}`}>
-                          <ClipboardList size={14} className={sc.color} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 text-sm truncate">{task.title}</p>
-                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                            <span className="flex items-center gap-1 text-xs text-gray-400">
-                              <Flag size={10} /> {task.priority || 'Moyen'}
-                            </span>
-                            {task.assignedTo?.email && (
-                              <span className="flex items-center gap-1 text-xs text-gray-400 truncate">
-                                <User size={10} /> {task.assignedTo.email}
-                              </span>
-                            )}
+                        className={`bg-white rounded-xl shadow-sm border-l-4 overflow-hidden transition-all ${
+                          needsValidation ? 'border-orange-400' : sc.border
+                        }`}>
+                        <div className="p-3.5 flex items-center gap-3 cursor-pointer hover:bg-gray-50"
+                          onClick={() => navigate('/task/' + task.id, { state: { task } })}>
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${needsValidation ? 'bg-orange-50' : sc.bg}`}>
+                            {needsValidation
+                              ? <ShieldCheck size={14} className="text-orange-500" />
+                              : <ClipboardList size={14} className={sc.color} />}
                           </div>
-                          {(task.startedAt || task.completedAt || task.blockedAt) && (
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
-                              {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
-                              {fmtHour(task.blockedAt) && <span className="text-xs text-amber-600 font-semibold">⚠ {fmtHour(task.blockedAt)}</span>}
-                              {fmtDuration(task.startedAt, task.completedAt) && (
-                                <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
-                              )}
-                              {!fmtHour(task.completedAt) && fmtDuration(task.startedAt, task.blockedAt) && (
-                                <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.blockedAt)}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-800 text-sm truncate">{task.title}</p>
+                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                              <span className="flex items-center gap-1 text-xs text-gray-400">
+                                <Flag size={10} /> {task.priority || 'Moyen'}
+                              </span>
+                              {task.assignedTo?.email && (
+                                <span className="flex items-center gap-1 text-xs text-gray-400 truncate">
+                                  <User size={10} /> {task.assignedTo.email}
+                                </span>
                               )}
                             </div>
+                            {(task.startedAt || task.completedAt || task.blockedAt) && (
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                {fmtHour(task.startedAt) && <span className="text-xs text-blue-500 font-semibold">▶ {fmtHour(task.startedAt)}</span>}
+                                {fmtHour(task.completedAt) && <span className="text-xs text-green-600 font-semibold">⏹ {fmtHour(task.completedAt)}</span>}
+                                {fmtHour(task.blockedAt) && <span className="text-xs text-amber-600 font-semibold">⚠ {fmtHour(task.blockedAt)}</span>}
+                                {fmtDuration(task.startedAt, task.completedAt) && (
+                                  <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.completedAt)}</span>
+                                )}
+                                {!fmtHour(task.completedAt) && fmtDuration(task.startedAt, task.blockedAt) && (
+                                  <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-full">⏱ {fmtDuration(task.startedAt, task.blockedAt)}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {needsValidation ? (
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 bg-orange-100 text-orange-700">
+                              À valider
+                            </span>
+                          ) : (
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
+                              {isValidated ? '✓ ' : ''}{sc.label}
+                            </span>
+                          )}
+                          {canDelete && (
+                            <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Supprimer cette tâche ?')) deleteTask(task.id); }}
+                              className="p-1.5 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0">
+                              <Trash2 size={15} />
+                            </button>
                           )}
                         </div>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>
-                          {sc.label}
-                        </span>
-                        {canDelete && (
-                          <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Supprimer cette tâche ?')) deleteTask(task.id); }}
-                            className="p-1.5 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0">
-                            <Trash2 size={15} />
+                        {needsValidation && (
+                          <button
+                            onClick={() => validateTask(task.id)}
+                            className="w-full flex items-center justify-center gap-2 py-3 text-sm font-extrabold text-white transition-all hover:brightness-110"
+                            style={{ background: 'linear-gradient(135deg, #ea580c, #c2410c)' }}>
+                            <ShieldCheck size={15} /> VALIDER LA TÂCHE
                           </button>
                         )}
                       </div>
