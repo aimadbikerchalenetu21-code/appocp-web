@@ -161,16 +161,18 @@ export default function AgentDashboard() {
   /* ── Data ────────────────────────────────────────────────────────────── */
   const today = todayYMD();
 
+  const taskDate = (t) => t.dueDate || t.scheduledDate || '';
+
   const byTab = allTasks.filter((t) =>
-    tab === 'today' ? t.dueDate === today :
-    tab === 'upcoming' ? t.dueDate > today :
-    t.dueDate < today
+    tab === 'today' ? taskDate(t) === today :
+    tab === 'upcoming' ? taskDate(t) > today :
+    taskDate(t) < today
   );
   const tasks = filterMode === 'mine' ? byTab.filter((t) => t.createdBy?.uid === user?.uid) : byTab;
 
-  const todayCount    = allTasks.filter((t) => t.dueDate === today).length;
-  const upcomingCount = allTasks.filter((t) => t.dueDate  >  today).length;
-  const historyCount  = allTasks.filter((t) => t.dueDate  <  today).length;
+  const todayCount    = allTasks.filter((t) => taskDate(t) === today).length;
+  const upcomingCount = allTasks.filter((t) => taskDate(t)  >  today).length;
+  const historyCount  = allTasks.filter((t) => taskDate(t)  <  today).length;
 
   const total            = tasks.length;
   const completed        = tasks.filter((t) => t.status === 'completed' && t.ocpValidated).length;
@@ -189,9 +191,10 @@ export default function AgentDashboard() {
 
   // Group ALL tasks by date (for calendar dots and selected-day tasks)
   const tasksByDate = allTasks.reduce((acc, t) => {
-    if (!t.dueDate) return acc;
-    if (!acc[t.dueDate]) acc[t.dueDate] = [];
-    acc[t.dueDate].push(t);
+    const d = taskDate(t);
+    if (!d) return acc;
+    if (!acc[d]) acc[d] = [];
+    acc[d].push(t);
     return acc;
   }, {});
 
@@ -636,7 +639,7 @@ export default function AgentDashboard() {
                               {task.assignedTo?.email && (
                                 <span className="flex items-center gap-1 text-xs text-gray-400 truncate"><User size={10} /> {task.assignedTo.email}</span>
                               )}
-                              {task.dueDate && <span className="text-xs text-gray-300">{task.dueDate}</span>}
+                              {taskDate(task) && <span className="text-xs text-gray-300">{taskDate(task)}</span>}
                             </div>
                             {(task.startedAt || task.completedAt || task.blockedAt) && (
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
